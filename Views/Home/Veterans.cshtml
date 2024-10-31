@@ -1,0 +1,56 @@
+﻿@model List<VeteranAnalyticsSystem.Models.Veteran>
+
+<h1>Veteran Database</h1>
+
+<form method="post" asp-action="FilterVeterans" class="filter-form">
+    <label for="gender">Gender:</label>
+    <select name="gender" id="gender">
+        <option value="">All</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+    </select>
+
+    <label for="startDate">Enrollment Start Date:</label>
+    <input type="date" name="startDate" id="startDate" />
+
+    <label for="endDate">Enrollment End Date:</label>
+    <input type="date" name="endDate" id="endDate" />
+
+    <button type="submit">Filter</button>
+</form>
+
+@if (Model == null || Model.Count == 0)
+{
+    <p>No veterans found.</p>
+}
+else
+{
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Gender</th>
+                <th>Date Of Birth</th>
+                <th>Branch of Service</th>
+                <th>Condition</th>
+                <th>Enrollment Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var veteran in Model)
+            {
+                <tr>
+                    <td>@veteran.FirstName</td>
+                    <td>@veteran.LastName</td>
+                    <td>@veteran.Gender</td>
+                    <td>@veteran.DateOfBirth.ToShortDateString()</td>
+                    <td>@veteran.BranchOfService</td>
+                    <td>@veteran.Condition</td>
+                    <td>@veteran.DateOfEntry.ToShortDateString()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

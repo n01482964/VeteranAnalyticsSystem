@@ -1,0 +1,14 @@
+﻿@model VeteranAnalyticsSystem.Models.Volunteer
+
+<h1>Delete Volunteer</h1>
+
+<p>Are you sure you want to delete this volunteer?</p>
+<div>
+    <strong>@Model.FirstName @Model.LastName</strong> - @Model.Email
+</div>
+
+<form asp-action="DeleteConfirmed" method="post">
+    <input type="hidden" asp-for="VolunteerId" />
+    <button type="submit">Delete</button>
+    <a asp-action="Volunteers">Cancel</a>
+</form>

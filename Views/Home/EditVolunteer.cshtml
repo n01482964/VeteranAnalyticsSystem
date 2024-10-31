@@ -1,0 +1,24 @@
+﻿@model VeteranAnalyticsSystem.Models.Volunteer
+
+<h1>Edit Volunteer</h1>
+
+<form asp-action="EditVolunteer" method="post">
+    <input type="hidden" asp-for="VolunteerId" />
+    <div>
+        <label>First Name:</label>
+        <input asp-for="FirstName" />
+    </div>
+    <div>
+        <label>Last Name:</label>
+        <input asp-for="LastName" />
+    </div>
+    <div>
+        <label>Email:</label>
+        <input asp-for="Email" />
+    </div>
+    <div>
+        <label>Phone Number:</label>
+        <input asp-for="PhoneNumber" />
+    </div>
+    <button type="submit">Save Changes</button>
+</form>

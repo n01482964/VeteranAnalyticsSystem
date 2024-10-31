@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Veteran Analytics System</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        /* Style the navigation bar */
+        nav {
+            background-color: #333;
+            padding: 10px;
+        }
+
+            nav ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: space-around;
+            }
+
+                nav ul li {
+                    display: inline;
+                }
+
+                    nav ul li a {
+                        color: white;
+                        text-decoration: none;
+                        padding: 14px 20px;
+                        display: block;
+                        font-size: 16px;
+                        transition: background-color 0.3s ease;
+                    }
+
+                        nav ul li a:hover {
+                            background-color: #575757;
+                        }
+
+        .container {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li><a asp-controller="Home" asp-action="Veterans">Veterans</a></li>
+                <li><a asp-controller="Home" asp-action="Events">Events</a></li>
+                <li><a asp-controller="Home" asp-action="Volunteers">Volunteers</a></li> <!-- Link to Volunteers page -->
+                <li><a asp-controller="Home" asp-action="Privacy">Privacy</a></li>
+            </ul>
+        </nav>
+    </header>
+    <div class="container">
+        @RenderBody()
+    </div>
+</body>
+</html>

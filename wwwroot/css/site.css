@@ -1,0 +1,44 @@
+/* Styling for filter form */
+.filter-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+    .filter-form label {
+        margin-right: 5px;
+        font-weight: bold;
+    }
+
+    .filter-form select, .filter-form input[type="date"], .filter-form button {
+        padding: 5px;
+        font-size: 1rem;
+    }
+
+/* Styling for veteran table */
+.veteran-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+    .veteran-table th, .veteran-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    .veteran-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+
+    .veteran-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    .veteran-table tr:hover {
+        background-color: #e2e2e2;
+    }
