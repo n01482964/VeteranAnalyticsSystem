@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Veteran Analytics System</title>
     <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
+
     <style>
         /* Style the navigation bar */
         nav {
-            background-color: #333;
+            background-color: #555;
             padding: 10px;
         }
 
@@ -57,5 +61,6 @@
     <div class="container">
         @RenderBody()
     </div>
+    @RenderSection("Scripts", required: false)
 </body>
 </html>
