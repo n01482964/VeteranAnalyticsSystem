@@ -26,7 +26,7 @@
 }
 else
 {
-    <table class="data-table">
+    <table id="veteranTable" class="data-table display">
         <thead>
             <tr>
                 <th>First Name</th>
@@ -53,4 +53,18 @@ else
             }
         </tbody>
     </table>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#veteranTable').DataTable({
+                paging: true,      // Enable pagination
+                searching: true,   // Enable searching
+                ordering: true,    // Enable column sorting
+                responsive: true,  // Make the table responsive
+                pageLength: 10     // Set the number of rows per page
+            });
+        });
+    </script>
 }

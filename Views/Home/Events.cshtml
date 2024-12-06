@@ -14,7 +14,7 @@
 }
 else
 {
-    <table class="data-table">
+    <table id="eventTable" class="data-table display">
         <thead>
             <tr>
                 <th>Event Name</th>
@@ -33,4 +33,18 @@ else
             }
         </tbody>
     </table>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#eventTable').DataTable({
+                paging: true,      // Enable pagination
+                searching: true,   // Enable search
+                ordering: true,    // Enable column sorting
+                responsive: true,  // Make the table responsive
+                pageLength: 10     // Number of rows per page
+            });
+        });
+    </script>
 }

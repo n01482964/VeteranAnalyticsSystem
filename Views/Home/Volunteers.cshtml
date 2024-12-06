@@ -11,7 +11,7 @@
 }
 else
 {
-    <table class="data-table">
+    <table id="volunteerTable" class="data-table display">
         <thead>
             <tr>
                 <th>First Name</th>
@@ -37,4 +37,18 @@ else
             }
         </tbody>
     </table>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#volunteerTable').DataTable({
+                paging: true,      // Enable pagination
+                searching: true,   // Enable searching
+                ordering: true,    // Enable column sorting
+                pageLength: 10,    // Number of rows per page
+                responsive: true   // Make the table responsive
+            });
+        });
+    </script>
 }
