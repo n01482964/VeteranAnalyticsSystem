@@ -1,35 +1,50 @@
-﻿// Controllers/EventController.cs
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
-using VeteranAnalyticsSystem.Models;
-using VeteranApplication.Data;
+using System.Threading.Tasks;
+using VeteranAnalyticsSystem.Data;
 
-namespace VeteranApplication.Controllers
+namespace VeteranAnalyticsSystem.Controllers
 {
-    public class EventController : Controller
+    public class EventsController : Controller
     {
-        private static List<Event> events = MockEventRepository.GetAllEvents(); // Simulating database access
+        private readonly GratitudeAmericaDbContext _context;
 
-        // Show the Event database
-        public IActionResult Index()
+        public EventsController(GratitudeAmericaDbContext context)
         {
-            // Get all events from the repository
-            var events = MockEventRepository.GetAllEvents();
-            return View(events); // Pass events list to the view
+            _context = context;
         }
 
-        // Search Event by Name and View Participants by Date
-        [HttpPost]
-        public IActionResult Search(string eventName)
+        // Display all events
+        public async Task<IActionResult> Index()
         {
-            var filteredEvents = events.Where(e => e.EventName.Contains(eventName, StringComparison.OrdinalIgnoreCase)).ToList();
+            var events = await _context.Events.ToListAsync();
+            return View(events);
+        }
+
+        // Search events by name
+        [HttpPost]
+        public async Task<IActionResult> SearchEvents(string eventName)
+        {
+            var filteredEvents = await _context.Events
+                .Where(e => e.EventName.Contains(eventName))
+                .ToListAsync();
+
             return View("Index", filteredEvents);
         }
 
-        // Show Event Details and Participants by Date
-        public IActionResult Details(int id)
+        // Show details for a specific event, including participants
+        public async Task<IActionResult> Details(int id)
         {
-            var eventDetail = events.FirstOrDefault(e => e.EventId == id);
+            var eventDetail = await _context.Events
+                .Include(e => e.Participants)
+                .FirstOrDefaultAsync(e => e.EventId == id);
+
+            if (eventDetail == null)
+            {
+                return NotFound();
+            }
+
             return View(eventDetail);
         }
     }

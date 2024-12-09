@@ -3,8 +3,8 @@
 <h1>Event Database</h1>
 
 <form method="post" asp-action="SearchEvents" class="search-form">
-    <label for="eventName">Event Name:</label>
-    <input type="text" name="eventName" id="eventName" placeholder="Search by event name" />
+    <label for="eventName">Search by Event Name:</label>
+    <input type="text" name="eventName" id="eventName" placeholder="Enter event name" />
     <button type="submit">Search</button>
 </form>
 
@@ -20,6 +20,7 @@ else
                 <th>Event Name</th>
                 <th>Location</th>
                 <th>Date</th>
+                <th>Details</th>
             </tr>
         </thead>
         <tbody>
@@ -29,7 +30,9 @@ else
                     <td>@eventItem.EventName</td>
                     <td>@eventItem.Location</td>
                     <td>@eventItem.EventDate.ToShortDateString()</td>
+                    <td><a asp-action="Details" asp-route-id="@eventItem.EventId" target="_blank">View Details</a></td>
                 </tr>
+
             }
         </tbody>
     </table>
@@ -40,7 +43,7 @@ else
         $(document).ready(function () {
             $('#eventTable').DataTable({
                 paging: true,      // Enable pagination
-                searching: true,   // Enable search
+                searching: true,   // Enable search functionality
                 ordering: true,    // Enable column sorting
                 responsive: true,  // Make the table responsive
                 pageLength: 10     // Number of rows per page
