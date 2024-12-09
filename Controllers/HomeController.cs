@@ -39,12 +39,20 @@ namespace VeteranAnalyticsSystem.Controllers
 
         // Filter Veterans by gender and date range
         [HttpPost]
-        public IActionResult FilterVeterans(string gender, DateTime? startDate, DateTime? endDate)
+        public IActionResult FilterVeterans(string gender, string branchOfService, string condition, DateTime? startDate, DateTime? endDate)
         {
             var filteredVeterans = veterans.AsQueryable();
 
             if (!string.IsNullOrEmpty(gender))
                 filteredVeterans = filteredVeterans.Where(v => v.Gender == gender);
+
+            if (!string.IsNullOrEmpty(branchOfService))
+                filteredVeterans = filteredVeterans.Where(v => v.BranchOfService == branchOfService);
+
+            // Filter by condition
+            if (!string.IsNullOrEmpty(condition))
+                filteredVeterans = filteredVeterans.Where(v => v.Condition.Contains(condition, StringComparison.OrdinalIgnoreCase));
+
 
             if (startDate.HasValue)
                 filteredVeterans = filteredVeterans.Where(v => v.DateOfEntry >= startDate.Value);
@@ -52,7 +60,26 @@ namespace VeteranAnalyticsSystem.Controllers
             if (endDate.HasValue)
                 filteredVeterans = filteredVeterans.Where(v => v.DateOfEntry <= endDate.Value);
 
+            var filteredList = filteredVeterans.ToList();
+            ViewBag.Analytics = CalculateVeteranAnalytics(filteredList);
+
             return View("Veterans", filteredVeterans.ToList());
+        }
+
+        private Dictionary<string, object> CalculateVeteranAnalytics(List<Veteran> veterans)
+        {
+            return new Dictionary<string, object>
+    {
+        { "TotalVeterans", veterans.Count },
+        { "AverageAge", veterans.Any() ? veterans.Average(v => (DateTime.Now - v.DateOfBirth).TotalDays / 365.25) : 0 },
+        { "GenderDistribution", veterans.GroupBy(v => v.Gender)
+                                        .ToDictionary(g => g.Key, g => g.Count()) },
+        { "BranchDistribution", veterans.GroupBy(v => v.BranchOfService)
+                                         .ToDictionary(b => b.Key, b => b.Count()) },
+        { "ConditionDistribution", veterans.GroupBy(v => v.Condition)
+                                            .ToDictionary(c => c.Key, c => c.Count()) }
+
+    };
         }
 
         // Events view for listing/searching/filtering Events
@@ -80,11 +107,14 @@ namespace VeteranAnalyticsSystem.Controllers
             return View(eventDetail);
         }
 
-        // Privacy policy view
-        public IActionResult Privacy()
+        // Settings view to display application settings
+        public IActionResult SyncSettings()
         {
-            return View();
+            // Retrieve sync statuses for display in the settings view
+            var syncStatuses = MockSyncStatusRepository.GetAllSyncStatuses();
+            return View(syncStatuses); // Pass sync statuses to the view
         }
+
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

@@ -11,6 +11,19 @@
         <option value="Other">Other</option>
     </select>
 
+    <label for="branchOfService">Branch of Service:</label>
+    <select name="branchOfService" id="branchOfService">
+        <option value="">All</option>
+        <option value="Army">Army</option>
+        <option value="Navy">Navy</option>
+        <option value="Air Force">Air Force</option>
+        <option value="Marines">Marines</option>
+        <option value="Coast Guard">Coast Guard</option>
+    </select>
+
+    <label for="condition">Condition:</label>
+    <input type="text" name="condition" id="condition" placeholder="e.g., PTSD, Injury" />
+
     <label for="startDate">Enrollment Start Date:</label>
     <input type="date" name="startDate" id="startDate" />
 
@@ -19,6 +32,37 @@
 
     <button type="submit">Filter</button>
 </form>
+
+@if (ViewBag.Analytics != null)
+{
+    var analytics = ViewBag.Analytics as Dictionary<string, object>;
+
+    <h2>Analytics</h2>
+    <ul>
+        <li><strong>Total Veterans:</strong> @analytics["TotalVeterans"]</li>
+        <li><strong>Average Age:</strong> @string.Format("{0:F2}", analytics["AverageAge"]) years</li>
+
+        <li>
+            <strong>Gender Distribution:</strong>
+            <ul>
+                @foreach (var gender in (Dictionary<string, int>)analytics["GenderDistribution"])
+                {
+                    <li>@gender.Key: @gender.Value</li>
+                }
+            </ul>
+        </li>
+
+        <li>
+            <strong>Branch Distribution:</strong>
+            <ul>
+                @foreach (var branch in (Dictionary<string, int>)analytics["BranchDistribution"])
+                {
+                    <li>@branch.Key: @branch.Value</li>
+                }
+            </ul>
+        </li>
+    </ul>
+}
 
 @if (Model == null || Model.Count == 0)
 {
@@ -56,8 +100,7 @@ else
 }
 
 @section Scripts {
-    <script>
-        $(document).ready(function () {
+    <script>$(document).ready(function () {
             $('#veteranTable').DataTable({
                 paging: true,      // Enable pagination
                 searching: true,   // Enable searching
@@ -65,6 +108,5 @@ else
                 responsive: true,  // Make the table responsive
                 pageLength: 10     // Set the number of rows per page
             });
-        });
-    </script>
+        });</script>
 }

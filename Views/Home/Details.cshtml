@@ -1,0 +1,22 @@
+﻿@model VeteranAnalyticsSystem.Models.SyncStatus
+
+<h2>Sync Details</h2>
+
+<div>
+    <h3>Sync Operation Details</h3>
+    <p><strong>Source:</strong> @Model.Source</p>
+    <p><strong>Target:</strong> @Model.Target</p>
+    <p><strong>Last Sync Time:</strong> @Model.LastSyncTime.ToString("f")</p>
+    <p><strong>Status:</strong> @Model.Status</p>
+    <p><strong>Details:</strong> @Model.Details</p>
+</div>
+
+<h3>Static Information About Sync</h3>
+<p>This page provides additional details about the sync operation.</p>
+<ul>
+    <li>The sync process ensures data integrity between the source and target systems.</li>
+    <li>Data transformation rules are applied as per the organization's requirements.</li>
+    <li>Common issues include network timeouts and API limits.</li>
+</ul>
+
+<a asp-controller="Home" asp-action="SyncSettings" class="btn btn-secondary">Back to Sync Overview</a>
