@@ -51,12 +51,13 @@
         <nav>
             <ul>
                 <li><a asp-controller="Home" asp-action="Index">Home</a></li>
-                <li><a asp-controller="Home" asp-action="Veterans">Veterans</a></li>
-                <li><a asp-controller="Home" asp-action="Events">Events</a></li>
-                <li><a asp-controller="Home" asp-action="Volunteers">Volunteers</a></li> <!-- Link to Volunteers page -->
+                <li><a asp-controller="Veterans" asp-action="Index">Veterans</a></li>
+                <li><a asp-controller="Events" asp-action="Index">Events</a></li>
+                <li><a asp-controller="Volunteers" asp-action="Index">Volunteers</a></li>
                 <li><a asp-controller="Home" asp-action="Privacy">Privacy</a></li>
             </ul>
         </nav>
+
     </header>
     <div class="container">
         @RenderBody()
