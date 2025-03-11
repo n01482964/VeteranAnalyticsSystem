@@ -37,8 +37,9 @@ app.MapControllerRoute(
 
 // Additional route for EventsController
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    name: "events",
+    pattern: "Events/{action=Index}/{id?}",
+    defaults: new { controller = "Event" });
 
 // Additional route for VolunteersController
 app.MapControllerRoute(

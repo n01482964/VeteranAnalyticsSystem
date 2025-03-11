@@ -20,7 +20,7 @@
     <button type="submit">Filter</button>
 </form>
 
-@if (Model == null || Model.Count == 0)
+@if (Model == null || !Model.Any())
 {
     <p>No veterans found.</p>
 }
@@ -34,8 +34,9 @@ else
                 <th>Gender</th>
                 <th>Date Of Birth</th>
                 <th>Branch of Service</th>
-                <th>Condition</th>
-                <th>Enrollment Date</th>
+                <th>Health Concerns</th>
+                <th>Service Start Date</th>
+                <th>Service End Date</th>
             </tr>
         </thead>
         <tbody>
@@ -47,13 +48,15 @@ else
                     <td>@veteran.Gender</td>
                     <td>@veteran.DateOfBirth.ToShortDateString()</td>
                     <td>@veteran.BranchOfService</td>
-                    <td>@veteran.Condition</td>
-                    <td>@veteran.DateOfEntry.ToShortDateString()</td>
+                    <td>@veteran.HealthConcerns</td>
+                    <td>@veteran.StartOfService.ToShortDateString()</td>
+                    <td>@veteran.EndOfService.ToShortDateString()</td>
                 </tr>
             }
         </tbody>
     </table>
 }
+
 @section Scripts {
     <script>
         $(document).ready(function () {
