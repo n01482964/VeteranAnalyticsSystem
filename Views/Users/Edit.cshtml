@@ -1,7 +1,8 @@
-﻿@model VeteranAnalyticsSystem.Models.Volunteer
+﻿@model VeteranAnalyticsSystem.Models.ApplicationUser
 
-<h1>Create Volunteer</h1>
-<form asp-action="Create">
+<h1>Edit User</h1>
+<form asp-action="Edit">
+    <input type="hidden" asp-for="Id" />
     <div class="form-group">
         <label for="FirstName">First Name</label>
         <input asp-for="FirstName" class="form-control" />

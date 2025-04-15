@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using VeteranAnalyticsSystem.Data;
 using VeteranAnalyticsSystem.Models;
 
@@ -16,102 +17,153 @@ namespace VeteranAnalyticsSystem.Controllers
             _context = context;
         }
 
-        // GET: Veterans/Index
         public IActionResult Index()
         {
-            var veterans = _context.Veterans.ToList();
+            var veterans = _context.Veterans
+                .Include(v => v.Event)
+                .ToList();
+
+            var distinctBranches = veterans
+                .Select(v => v.BranchOfService)
+                .SelectMany(b => b.Split(',').Select(b => b.Trim()))
+                .Distinct()
+                .ToList();
+
+            ViewBag.Branches = distinctBranches;
+            ViewBag.EventLocations = _context.Events.Select(e => e.Location).Distinct().ToList();
+            ViewBag.Dates = _context.Events.Select(e => e.EventDate).Distinct().ToList();
+
+            var veteranLabels = veterans.Select(v => v.Gender).Distinct().ToList();
+            var veteranData = veterans.GroupBy(v => v.Gender).Select(g => g.Count()).ToList();
+            var eventLabels = new[] { "Army", "Navy", "Air Force", "Marines" };
+            var eventData = new[] { 50, 30, 20, 15 };
+
+            ViewBag.VeteranLabels = veteranLabels;
+            ViewBag.VeteranData = veteranData;
+            ViewBag.EventLabels = eventLabels;
+            ViewBag.EventData = eventData;
+
             return View(veterans);
         }
 
-        // POST: Veterans/FilterVeterans
         [HttpPost]
-        public IActionResult FilterVeterans(string gender, DateTime? startDate, DateTime? endDate)
+        public IActionResult FilterVeterans(string gender, string[] branches, DateTime? startDate, DateTime? endDate, string eventLocation, DateTime? eventDate)
         {
-            var filteredVeterans = _context.Veterans.AsQueryable();
+            var filteredVeterans = _context.Veterans
+                .Include(v => v.Event)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(gender))
-            {
                 filteredVeterans = filteredVeterans.Where(v => v.Gender == gender);
-            }
 
-            // When both startDate and endDate are provided,
-            // select veterans whose service period overlaps the search interval.
+            if (branches != null && branches.Any())
+                filteredVeterans = filteredVeterans.Where(v => branches.Any(branch => v.BranchOfService.Contains(branch)));
+
             if (startDate.HasValue && endDate.HasValue)
-            {
-                filteredVeterans = filteredVeterans.Where(v =>
-                    v.StartOfService <= endDate.Value &&
-                    v.EndOfService >= startDate.Value);
-            }
-            // If only startDate is provided, return veterans whose service ended on or after the search start.
+                filteredVeterans = filteredVeterans.Where(v => v.StartOfService <= endDate.Value && v.EndOfService >= startDate.Value);
             else if (startDate.HasValue)
-            {
-                filteredVeterans = filteredVeterans.Where(v =>
-                    v.EndOfService >= startDate.Value);
-            }
-            // If only endDate is provided, return veterans who started service on or before the search end.
+                filteredVeterans = filteredVeterans.Where(v => v.EndOfService >= startDate.Value);
             else if (endDate.HasValue)
-            {
-                filteredVeterans = filteredVeterans.Where(v =>
-                    v.StartOfService <= endDate.Value);
-            }
+                filteredVeterans = filteredVeterans.Where(v => v.StartOfService <= endDate.Value);
+
+            if (!string.IsNullOrWhiteSpace(eventLocation))
+                filteredVeterans = filteredVeterans.Where(v => v.Event != null && v.Event.Location == eventLocation);
+
+            if (eventDate.HasValue)
+                filteredVeterans = filteredVeterans.Where(v => v.Event != null && v.Event.EventDate.Date == eventDate.Value.Date);
 
             return View("Index", filteredVeterans.ToList());
         }
 
-        // GET: Veterans/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
+        public IActionResult Create() => View();
 
-        // POST: Veterans/Create
         [HttpPost]
         public async Task<IActionResult> Create(Veteran veteran)
         {
             if (ModelState.IsValid)
             {
-                // Look up an existing event using the veteran's RetreatDateLocation.
-                var existingEvent = _context.Events
-                    .FirstOrDefault(e => e.EventName == veteran.RetreatDateLocation);
+                var existingEvent = _context.Events.FirstOrDefault(e =>
+                    e.Location == veteran.City && e.EventDate.Date == veteran.StartOfService.Date);
 
                 if (existingEvent == null)
                 {
-                    // Create a new event if one does not exist.
-                    var newEvent = new Event
+                    existingEvent = new Event
                     {
-                        EventName = veteran.RetreatDateLocation,
-                        // Optionally, parse out the actual location and event date from the string.
-                        Location = veteran.RetreatDateLocation,
-                        EventDate = DateTime.Now // Replace with the actual event date if available.
+                        Location = veteran.City,
+                        EventDate = veteran.StartOfService
                     };
-                    _context.Events.Add(newEvent);
+                    _context.Events.Add(existingEvent);
                     await _context.SaveChangesAsync();
-                    existingEvent = newEvent;
                 }
 
-                // Check if the veteran already exists (using the unique VeteranId generated from email).
-                var existingVeteran = _context.Veterans.FirstOrDefault(v => v.VeteranId == veteran.VeteranId);
-
-                if (existingVeteran != null)
-                {
-                    // If the veteran already exists, add the event if it is not already linked.
-                    if (!existingVeteran.Events.Any(e => e.EventId == existingEvent.EventId))
-                    {
-                        existingVeteran.Events.Add(existingEvent);
-                    }
-                    _context.Veterans.Update(existingVeteran);
-                }
-                else
-                {
-                    // New veteran: add the event to the veteran's event list.
-                    veteran.Events.Add(existingEvent);
-                    _context.Veterans.Add(veteran);
-                }
-
+                veteran.EventId = existingEvent.EventId;
+                _context.Veterans.Add(veteran);
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
+
             return View(veteran);
+        }
+
+        public async Task<IActionResult> Edit(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return NotFound();
+            var veteran = await _context.Veterans.FindAsync(id);
+            return veteran == null ? NotFound() : View(veteran);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(string id, Veteran updatedVeteran)
+        {
+            if (id != updatedVeteran.VeteranId)
+                return NotFound();
+
+            if (!ModelState.IsValid)
+                return View(updatedVeteran);
+
+            try
+            {
+                _context.Update(updatedVeteran);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Veterans.Any(e => e.VeteranId == id))
+                    return NotFound();
+                throw;
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> Details(string id)
+        {
+            var veteran = await _context.Veterans
+                .Include(v => v.Event)
+                .FirstOrDefaultAsync(v => v.VeteranId == id);
+
+            return veteran == null ? NotFound() : View(veteran);
+        }
+
+        // POST: Veterans/Rate
+        [HttpPost]
+        public async Task<IActionResult> Rate(string id, int? newRating)
+        {
+            if (string.IsNullOrEmpty(id) || newRating is < 1 or > 5)
+            {
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            var veteran = await _context.Veterans.FindAsync(id);
+            if (veteran == null)
+                return NotFound();
+
+            veteran.StarRating = newRating;
+            _context.Veterans.Update(veteran);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Details), new { id });
         }
     }
 }

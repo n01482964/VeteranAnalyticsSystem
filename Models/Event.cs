@@ -9,14 +9,13 @@ namespace VeteranAnalyticsSystem.Models
         public int EventId { get; set; }
 
         [Required]
-        public required string EventName { get; set; }
+        [StringLength(100)]
+        public required string Location { get; set; }
 
         [Required]
-        public required string Location { get; set; } = string.Empty;
-
         public DateTime EventDate { get; set; }
 
-        // Navigation property for many-to-many relation with veterans.
-        public ICollection<Veteran> Participants { get; set; } = new List<Veteran>();
+        // Navigation property: One Event can have many Veterans
+        public ICollection<Veteran> Veterans { get; set; } = new List<Veteran>();
     }
 }

@@ -1,0 +1,70 @@
+﻿@model VeteranAnalyticsSystem.Models.Survey
+
+@{
+    ViewData["Title"] = "Survey Details";
+
+    // Update the dictionary keys to match the keys in Model.Responses.
+    // Adjust the questions as needed for your survey.
+    var questionLookup = new Dictionary<string, string>
+            {
+                // For example, if your CSV/Excel file produces keys "Q2", "Q3", etc.
+                ["Q2"] = "Unique 4-Digit Code",
+                ["Q3"] = "Level of Emotional Connection with Your Support Person/Veteran",
+                ["Q4"] = "Ability to Resolve Conflict with Your Support Person/Veteran",
+                ["Q5"] = "Likelihood to Share Past Struggles with Your Support Person/Veteran",
+                ["Q6"] = "Likelihood to Step Outside Your Comfort Zone",
+                ["Q7"] = "Motivation to Seek Support for Mental Wellness"
+                // You can add additional mappings for Q8, Q9, etc. if needed.
+            };
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4">Survey Details (ID: @Model.SurveyId)</h1>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            Basic Information
+        </div>
+        <div class="card-body">
+            <p class="card-text">
+                <strong>Email (Veteran):</strong> @Model.Email <br />
+                <strong>Survey Type:</strong> @Model.SurveyType <br />
+                <strong>Submission Date:</strong> @Model.SubmissionDate.ToShortDateString()
+            </p>
+        </div>
+    </div>
+
+    <h3>Survey Responses</h3>
+    @if (Model.Responses != null && Model.Responses.Any())
+    {
+        <table class="table table-striped table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Question</th>
+                    <th>Response</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var kvp in Model.Responses)
+                {
+                    // Use the key from the CSV/Excel file (e.g., "Q2") to look up the corresponding question text.
+                    var key = kvp.Key;
+                    var questionText = questionLookup.ContainsKey(key)
+                    ? questionLookup[key]
+                    : key; // fallback to the raw key if not found
+
+                    var answer = kvp.Value;
+
+                    <tr>
+                        <td><strong>@questionText</strong></td>
+                        <td>@answer</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>No responses available for this survey.</p>
+    }
+</div>

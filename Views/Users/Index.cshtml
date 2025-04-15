@@ -1,17 +1,14 @@
-﻿@model List<VeteranAnalyticsSystem.Models.Volunteer>
+﻿@model List<VeteranAnalyticsSystem.Models.ApplicationUser>
 
-<h1>Volunteers</h1>
+<h1>Users</h1>
 
-<!-- Link to create a new volunteer -->
-<a asp-action="Create" class="btn btn-primary">Create New Volunteer</a>
-
-@if (Model == null || Model.Count == 0)
+@if (Model == null || !Model.Any())
 {
-    <p>No volunteers found.</p>
+    <p>No users found.</p>
 }
 else
 {
-    <table id="volunteerTable" class="data-table display">
+    <table id="userTable" class="data-table display">
         <thead>
             <tr>
                 <th>First Name</th>
@@ -22,16 +19,16 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var volunteer in Model)
+            @foreach (var user in Model)
             {
                 <tr>
-                    <td>@volunteer.FirstName</td>
-                    <td>@volunteer.LastName</td>
-                    <td>@volunteer.Email</td>
-                    <td>@volunteer.PhoneNumber</td>
+                    <td>@user.FirstName</td>
+                    <td>@user.LastName</td>
+                    <td>@user.Email</td>
+                    <td>@user.PhoneNumber</td>
                     <td>
-                        <a asp-action="Edit" asp-route-id="@volunteer.VolunteerId" class="btn btn-sm btn-warning">Edit</a>
-                        <a asp-action="Delete" asp-route-id="@volunteer.VolunteerId" class="btn btn-sm btn-danger">Delete</a>
+                        <a asp-action="Edit" asp-route-id="@user.Email" class="btn btn-sm btn-warning">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@user.Email" class="btn btn-sm btn-danger">Delete</a>
                     </td>
                 </tr>
             }
@@ -42,7 +39,7 @@ else
 @section Scripts {
     <script>
         $(document).ready(function () {
-            $('#volunteerTable').DataTable({
+            $('#userTable').DataTable({
                 paging: true,           // Enable pagination
                 searching: true,        // Enable search
                 ordering: true,         // Enable column sorting

@@ -11,10 +11,25 @@
         <option value="Other">Other</option>
     </select>
 
-    <label for="startDate">Enrollment Start Date:</label>
+    <label for="eventLocation">Retreat Location:</label>
+    <select name="eventLocation" id="eventLocation">
+        <option value="">All</option>
+        @if (ViewBag.EventLocations != null)
+        {
+            foreach (var loc in ViewBag.EventLocations as List<string>)
+            {
+                <option value="@loc">@loc</option>
+            }
+        }
+    </select>
+
+    <label for="eventDate">Retreat Date:</label>
+    <input type="date" name="eventDate" id="eventDate" />
+
+    <label for="startDate">Service Start Date:</label>
     <input type="date" name="startDate" id="startDate" />
 
-    <label for="endDate">Enrollment End Date:</label>
+    <label for="endDate">Service End Date:</label>
     <input type="date" name="endDate" id="endDate" />
 
     <button type="submit">Filter</button>
@@ -35,8 +50,12 @@ else
                 <th>Date Of Birth</th>
                 <th>Branch of Service</th>
                 <th>Health Concerns</th>
-                <th>Service Start Date</th>
-                <th>Service End Date</th>
+                <th>Service Start</th>
+                <th>Service End</th>
+                <th>Retreat Location</th>
+                <th>Retreat Date</th>
+                <th>Star Rating</th>
+                <th>Details</th>
             </tr>
         </thead>
         <tbody>
@@ -51,6 +70,16 @@ else
                     <td>@veteran.HealthConcerns</td>
                     <td>@veteran.StartOfService.ToShortDateString()</td>
                     <td>@veteran.EndOfService.ToShortDateString()</td>
+                    <td>@veteran.Event?.Location</td>
+                    <td>@veteran.Event?.EventDate.ToShortDateString()</td>
+                    <td>
+                        @(veteran.StarRating.HasValue ? $"{veteran.StarRating} ★" : "Unrated")
+                    </td>
+                    <td>
+                        <a asp-action="Details" asp-controller="Veterans" asp-route-id="@veteran.VeteranId" class="btn btn-sm btn-outline-primary" target="_blank">
+                            View Details
+                        </a>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -61,11 +90,11 @@ else
     <script>
         $(document).ready(function () {
             $('#veteranTable').DataTable({
-                paging: true,      // Enable pagination
-                searching: true,   // Enable searching
-                ordering: true,    // Enable column sorting
-                responsive: true,  // Make the table responsive
-                pageLength: 10     // Set the number of rows per page
+                paging: true,
+                searching: true,
+                ordering: true,
+                responsive: true,
+                pageLength: 10
             });
         });
     </script>
