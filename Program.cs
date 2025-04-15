@@ -1,16 +1,61 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using VeteranAnalyticsSystem.Data;
+using VeteranAnalyticsSystem.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+// Configure EF Core with your DB context
 builder.Services.AddDbContext<GratitudeAmericaDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Configure Identity and Roles
+builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = false;
+})
+.AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<GratitudeAmericaDbContext>();
+
+// ✅ Keep global policy, but exclude Identity UI
+builder.Services.AddControllersWithViews(options =>
+{
+    var policy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+    options.Filters.Add(new AuthorizeFilter(policy)); // This ensures authentication for all controllers except the Identity ones
+});
+
+// ✅ Allow anonymous access to Identity UI folder
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Login");
+    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Register");
+    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/AccessDenied");
+    options.Conventions.AllowAnonymousToAreaFolder("Identity", "/Account");
+});
+
+// Configure redirect paths for login/access denied (optional but recommended)
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Identity/Account/Login";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+});
+
+// Build the app
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Seed Roles and Admin User on startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    await DbInitializer.SeedRoles(services);
+    await DbInitializer.SeedAdminUser(services);
+}
+
+// Configure HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -22,29 +67,52 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication(); // Required before UseAuthorization
 app.UseAuthorization();
 
-// Default routing
+// Default route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Additional route for VeteransController
+// Route for "Veterans"
 app.MapControllerRoute(
     name: "veterans",
     pattern: "Veterans/{action=Index}/{id?}",
-    defaults: new { controller = "Veterans" });
+    defaults: new { controller = "Veterans", action = "Index" });
 
-// Additional route for EventsController
+// Route for "Veterans Details"
+app.MapControllerRoute(
+    name: "veteranDetails",
+    pattern: "Veterans/Details/{id}", // Route to pass the id for veteran details
+    defaults: new { controller = "Veterans", action = "Details" });
+
+// Route for "Events"
 app.MapControllerRoute(
     name: "events",
     pattern: "Events/{action=Index}/{id?}",
-    defaults: new { controller = "Event" });
+    defaults: new { controller = "Events", action = "Index" });
 
-// Additional route for VolunteersController
+// Route for Surveys
 app.MapControllerRoute(
-    name: "volunteers",
-    pattern: "Volunteers/{action=Index}/{id?}",
-    defaults: new { controller = "Volunteers", action = "Index" });
+    name: "surveys",
+    pattern: "Surveys/{action=Index}/{id?}",
+    defaults: new { controller = "Surveys", action = "Index" });
+
+app.MapControllerRoute(
+    name: "users",
+    pattern: "Users/{action=Index}/{id?}",  // Default action will be "Index"
+    defaults: new { controller = "Users", action = "Index" });
+
+
+// Route for user settings (specific to user profile settings)
+app.MapControllerRoute(
+    name: "userSettings",
+    pattern: "Users/Settings", // This route will be used for the user settings page
+    defaults: new { controller = "Users", action = "Settings" });
+
+
+// Razor Pages (including Identity UI pages)
+app.MapRazorPages();
 
 app.Run();

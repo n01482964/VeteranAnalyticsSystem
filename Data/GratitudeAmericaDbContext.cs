@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using VeteranAnalyticsSystem.Models;
 
 namespace VeteranAnalyticsSystem.Data
 {
-    public class GratitudeAmericaDbContext : DbContext
+    public class GratitudeAmericaDbContext : IdentityDbContext<ApplicationUser>
     {
         public GratitudeAmericaDbContext(DbContextOptions<GratitudeAmericaDbContext> options)
             : base(options)
@@ -17,11 +18,11 @@ namespace VeteranAnalyticsSystem.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Always call the base method when using IdentityDbContext
             base.OnModelCreating(modelBuilder);
 
-            // Explicitly ignore the 'Responses' property in Survey
+            // Custom model configuration (optional)
             modelBuilder.Entity<Survey>().Ignore(s => s.Responses);
-
         }
     }
 }

@@ -1,0 +1,80 @@
+﻿@model VeteranAnalyticsSystem.Models.Veteran
+
+@{
+    ViewData["Title"] = "Veteran Details";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4 text-center">Veteran Details</h1>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4>@Model.FirstName @Model.LastName</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3"><strong>Gender:</strong> @Model.Gender</div>
+                <div class="col-md-6 mb-3"><strong>Date of Birth:</strong> @Model.DateOfBirth.ToShortDateString()</div>
+                <div class="col-md-6 mb-3"><strong>Phone Number:</strong> @Model.PhoneNumber</div>
+                <div class="col-md-6 mb-3"><strong>Home Address:</strong> @Model.HomeAddress</div>
+                <div class="col-md-6 mb-3"><strong>City:</strong> @Model.City</div>
+                <div class="col-md-6 mb-3"><strong>State:</strong> @Model.State</div>
+                <div class="col-md-6 mb-3"><strong>Relationship Status:</strong> @Model.RelationshipStatus</div>
+                <div class="col-md-6 mb-3"><strong>Military Service Status:</strong> @Model.MilitaryServiceStatus</div>
+                <div class="col-md-6 mb-3"><strong>Highest Rank:</strong> @Model.HighestRank</div>
+                <div class="col-md-6 mb-3"><strong>Service Start Date:</strong> @Model.StartOfService.ToShortDateString()</div>
+                <div class="col-md-6 mb-3"><strong>Service End Date:</strong> @Model.EndOfService.ToShortDateString()</div>
+                <div class="col-md-6 mb-3"><strong>Branch of Service:</strong> @Model.BranchOfService</div>
+                <div class="col-md-6 mb-3"><strong>Number of Deployments:</strong> @Model.NumberOfDeployments</div>
+                <div class="col-md-12 mb-3"><strong>Deployment Details:</strong> @Model.DeploymentDetails</div>
+                <div class="col-md-12 mb-3"><strong>Health Concerns:</strong> @Model.HealthConcerns</div>
+                <div class="col-md-12 mb-3"><strong>Additional Health Info:</strong> @Model.AdditionalHealthInfo</div>
+                <div class="col-md-12 mb-3"><strong>Physical Limitations:</strong> @Model.PhysicalLimitations</div>
+
+                @if (Model.Event != null)
+                {
+                    <div class="col-md-12 mb-3">
+                        <strong>Retreat Location:</strong> @Model.Event.Location
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <strong>Retreat Date:</strong> @Model.Event.EventDate.ToString("MMMM dd, yyyy")
+                    </div>
+                }
+                else
+                {
+                    <div class="col-md-12 mb-3 text-danger">
+                        Retreat event data not available.
+                    </div>
+                }
+
+                <div class="col-md-12 mt-4">
+                    <h5>Star Rating</h5>
+                    <p>
+                        Current Rating:
+                        @if (Model.StarRating.HasValue)
+                        {
+                            <span class="text-warning">@Model.StarRating ★</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Unrated</span>
+                        }
+                    </p>
+
+                    <form asp-action="Rate" asp-controller="Veterans" method="post" class="form-inline">
+                        <input type="hidden" name="id" value="@Model.VeteranId" />
+                        <label for="newRating">Update Rating:</label>
+                        <select name="newRating" id="newRating" class="form-select d-inline-block mx-2" style="width: auto;">
+                            <option value="">Select</option>
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <option value="@i">@i ★</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-success">Save Rating</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,86 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@model List<VeteranAnalyticsSystem.Models.Survey>
+@{
+    ViewData["Title"] = "Survey Database";
+}
+
+<h1>Survey Database</h1>
+
+<!-- Optional Filter Form -->
+<form method="post" asp-action="FilterSurveys" class="filter-form">
+    <label for="surveyType">Survey Type:</label>
+    <select name="surveyType" id="surveyType">
+        <option value="">All</option>
+        <option value="PreRetreat">Pre-Retreat</option>
+        <option value="PostRetreat">Post-Retreat</option>
+    </select>
+
+    <label for="startDate">Submission Start Date:</label>
+    <input type="date" name="startDate" id="startDate" />
+
+    <label for="endDate">Submission End Date:</label>
+    <input type="date" name="endDate" id="endDate" />
+
+    <button type="submit">Filter</button>
+</form>
+
+@if (Model == null || !Model.Any())
+{
+    <p>No surveys found.</p>
+}
+else
+{
+    <table id="surveyTable" class="data-table display">
+        <thead>
+            <tr>
+                <th>Survey ID</th>
+                <th>Email</th>
+                <th>Survey Type</th>
+                <th>Submission Date</th>
+                <th>Responses (JSON)</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var survey in Model)
+            {
+                <tr>
+                    <td>@survey.SurveyId</td>
+                    <td>@survey.Email</td>
+                    <td>@survey.SurveyType</td>
+                    <td>@survey.SubmissionDate.ToShortDateString()</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(survey.ResponsesJson))
+                        {
+                            <!-- Optionally, display only the first 50 characters of the JSON -->
+                            @(survey.ResponsesJson.Length > 50
+                                ? survey.ResponsesJson.Substring(0, 50) + "..."
+                                : survey.ResponsesJson)
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="Details" asp-controller="Surveys" asp-route-id="@survey.SurveyId" target="_blank">View Details</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#surveyTable').DataTable({
+                paging: true,      // Enable pagination
+                searching: true,   // Enable searching
+                ordering: true,    // Enable column sorting
+                responsive: true,  // Make the table responsive
+                pageLength: 10     // Set the number of rows per page
+            });
+        });
+    </script>
+}

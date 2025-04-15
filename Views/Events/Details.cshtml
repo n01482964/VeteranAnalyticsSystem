@@ -1,36 +1,53 @@
 ﻿@model VeteranAnalyticsSystem.Models.Event
-
-<h1>@Model.EventName - @Model.EventDate.ToShortDateString()</h1>
-<h2>Location: @Model.Location</h2>
-
-<h3>Participants</h3>
-@if (Model.Participants == null || Model.Participants.Count == 0)
-{
-        <p>No participants found for this event.</p>
+@{
+    ViewData["Title"] = "Event Details";
 }
-else
-{
-        <table>
-            <thead>
-                <tr>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Gender</th>
-                    <th>Branch of Service</th>
-                    <th>Health Concerns</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach (var veteran in Model.Participants)
-            {
+
+<div class="container mt-4">
+    <h2 class="mb-3">Event Details</h2>
+
+    <div class="card p-3 mb-4">
+        <h4 class="card-title">@Model.Location</h4>
+        <p class="card-text"><strong>Date:</strong> @Model.EventDate.ToShortDateString()</p>
+        <p class="card-text"><strong>Total Participants:</strong> @(Model.Veterans?.Count ?? 0)</p>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <h5 class="mb-3">Participants</h5>
+
+        @if (Model.Veterans != null && Model.Veterans.Any())
+        {
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Gender</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model.Veterans)
+                    {
                         <tr>
-                            <td>@veteran.FirstName</td>
-                            <td>@veteran.LastName</td>
-                            <td>@veteran.Gender</td>
-                            <td>@veteran.BranchOfService</td>
-                            <td>@veteran.HealthConcerns</td>
+                            <td>@v.FirstName @v.LastName</td>
+                            <td>@v.Email</td>
+                            <td>@v.PhoneNumber</td>
+                            <td>@v.Gender</td>
                         </tr>
-            }
-            </tbody>
-        </table>
-}
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="text-muted">No participants found for this event.</p>
+        }
+    </div>
+
+    <!-- Placeholder for survey info -->
+    <div class="card p-3">
+        <h5 class="mb-2">Survey Data (Coming Soon)</h5>
+        <p class="text-muted">Survey insights will be shown here once connected via the VeteranSurvey join table.</p>
+    </div>
+</div>

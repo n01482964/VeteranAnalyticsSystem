@@ -6,40 +6,71 @@ using System.Text.Json;
 
 namespace VeteranAnalyticsSystem.Models
 {
+    // Define an enum to distinguish survey types.
+    public enum SurveyType
+    {
+        PreRetreat = 0,
+        PostRetreat = 1
+    }
+
     public class Survey
     {
+        // Primary key (auto-generated)
         [Key]
         public int SurveyId { get; set; }
 
-        // Foreign key linking to the Veteran (generated from email)
+        // Use the Email field to relate this survey to a veteran.
         [Required]
-        public required string VeteranId { get; set; } = string.Empty;
-        public required Veteran Veteran { get; set; }
+        [EmailAddress]
+        [StringLength(256)]
+        public string Email { get; set; } = string.Empty;
 
-        // Link to an event (assumed required)
+        // Optional: Capture an associated event.
         public int EventId { get; set; }
-        public required Event Event { get; set; }
 
-        // This property is used in code but not mapped by EF Core.
+        // Enum to distinguish between pre- and post-retreat surveys.
+        // Marked as Required and given a default value.
+        [Required]
+        [Display(Name = "Survey Type")]
+        public SurveyType SurveyType { get; set; } = SurveyType.PreRetreat;
+
+        // Date the survey was submitted.
+        public DateTime SubmissionDate { get; set; }
+
+        /// <summary>
+        /// Holds the survey questions and responses in memory as a Dictionary.
+        /// This property is not directly mapped to a database column.
+        /// </summary>
         [NotMapped]
         public Dictionary<string, string> Responses { get; set; } = new Dictionary<string, string>();
 
-        // Mapped property that stores the JSON representation of the responses.
+        /// <summary>
+        /// This property stores the JSON representation of the Responses dictionary in the database.
+        /// It uses System.Text.Json for serialization.
+        /// </summary>
         [Column("Responses", TypeName = "nvarchar(max)")]
         public string ResponsesJson
         {
             get => JsonSerializer.Serialize(Responses);
-            set => Responses = string.IsNullOrWhiteSpace(value)
-                ? new Dictionary<string, string>()
-                : JsonSerializer.Deserialize<Dictionary<string, string>>(value) ?? new Dictionary<string, string>();
-        }
-
-        public DateTime SubmissionDate { get; set; }
-
-        // Helper method to add or update a response.
-        public void AddResponse(string question, string answer)
-        {
-            Responses[question] = answer;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    Responses = new Dictionary<string, string>();
+                }
+                else
+                {
+                    try
+                    {
+                        var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(value);
+                        Responses = dict ?? new Dictionary<string, string>();
+                    }
+                    catch
+                    {
+                        Responses = new Dictionary<string, string>();
+                    }
+                }
+            }
         }
     }
 }
