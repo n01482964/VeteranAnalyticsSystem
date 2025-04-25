@@ -1,5 +1,4 @@
-﻿@model List<VeteranAnalyticsSystem.Models.Veteran>
-@{
+﻿@{
     ViewData["Title"] = "Home";
 }
 
@@ -31,39 +30,6 @@
     <!-- Interactive Analytics Modal Trigger -->
     <div class="text-center mb-5">
         <button id="openModal" class="btn btn-lg btn-outline-primary">Interactive Analytics</button>
-    </div>
-
-    <!-- Data Import Section -->
-    <div class="row justify-content-center mb-5">
-        <div class="col-lg-8">
-            <h2>Data Import</h2>
-            <p>Current number of veterans: <strong>@ViewBag.TotalVeterans</strong></p>
-
-            <form id="importForm" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label>Select CSV or Excel file to import:</label>
-                    <input type="file" name="uploadFile" class="form-control-file" accept=".csv,.xlsx,.xls" />
-                </div>
-                <div class="form-group">
-                    <label for="fileType">Select File Type:</label>
-                    <select id="fileType" name="fileType" class="form-control">
-                        <option value="VeteranData">Veteran Data</option>
-                        <option value="PreRetreatSurvey">PreRetreat Survey</option>
-                        <option value="PostRetreatSurvey">PostRetreat Survey</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-success">Upload File</button>
-            </form>
-
-            <button id="deleteAllVeteransBtn" class="btn btn-warning mt-2">
-                Delete All Veterans
-            </button>
-
-            <button id="deleteAllSurveysBtn" class="btn btn-warning mt-2">Delete All Survey Data</button>
-       
-            <button id="deleteAllEventsBtn" class="btn btn-warning mt-2">Delete All Events</button>
-
-        </div>
     </div>
 </div>
 
@@ -114,17 +80,14 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Parse interactive analytics data from ViewBag (with fallbacks to empty arrays)
         const genderLabels = @Html.Raw(Json.Serialize(ViewBag.GenderLabels ?? new List<string>()));
         const genderData = @Html.Raw(Json.Serialize(ViewBag.GenderData ?? new List<int>()));
         const branchLabels = @Html.Raw(Json.Serialize(ViewBag.BranchLabels ?? new List<string>()));
         const branchData = @Html.Raw(Json.Serialize(ViewBag.BranchData ?? new List<int>()));
 
-        // Modal and Interactive Analytics functionality
         let chart;
         const ctx = document.getElementById('interactiveChart').getContext('2d');
 
-        // Axis labels for clarity in the chart legend.
         const axisLabels = {
             'gender': 'Veteran Gender',
             'branch': 'Veteran Branch',
@@ -153,7 +116,6 @@
 
         document.getElementById('openModal').addEventListener('click', () => {
             document.getElementById('interactiveModal').style.display = 'block';
-            // Default: show veteran gender analytics.
             createChart('bar', genderLabels, genderData, 'Number of Veterans by Gender');
         });
 
@@ -178,87 +140,16 @@
                 data = branchData;
                 labelText = `${axisLabels['veteran_count']} by ${axisLabels['branch']}`;
             } else {
-                alert("Invalid data selection. Please choose valid axes.");
+                alert("Invalid data selection.");
                 return;
             }
 
             if (labels.length === 0 || data.length === 0) {
-                alert("No data available for the selected options.");
+                alert("No data available.");
                 return;
             }
 
             createChart(chartType, labels, data, labelText);
-        });
-
-        // AJAX File Import Handling
-        $(document).ready(function () {
-            $('#importForm').submit(function (e) {
-                e.preventDefault();
-                var formData = new FormData(this);
-                // The form now contains a field "fileType" (which could be one of three options).
-                $.ajax({
-                    url: '@Url.Action("Import", "DataImport")',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function (response) {
-                        if (response.success) {
-                            alert(response.message); // Show success pop-up.
-                        } else {
-                            alert("Error: " + response.message);
-                        }
-                    },
-                    error: function () {
-                        alert("An error occurred during the file upload.");
-                    }
-                });
-            });
-        });
-
-                $('#deleteAllSurveysBtn').click(function () {
-            if (confirm("Are you sure you want to delete ALL survey data? This cannot be undone.")) {
-                $.ajax({
-                    url: '@Url.Action("DeleteAllSurveys", "DataImport")',
-                    type: 'POST',
-                    success: function (response) {
-                        alert(response.message || "All surveys deleted.");
-                    },
-                    error: function () {
-                        alert("An error occurred while deleting survey data.");
-                    }
-                });
-            }
-        });
-
-                $('#deleteAllVeteransBtn').click(function () {
-            if (confirm("Are you sure you want to delete ALL veteran data? This cannot be undone.")) {
-                $.ajax({
-                    url: '@Url.Action("DeleteAllVeterans", "DataImport")',
-                    type: 'POST',
-                    success: function (response) {
-                        alert(response.message || "All veterans deleted.");
-                    },
-                    error: function () {
-                        alert("An error occurred while deleting veteran data.");
-                    }
-                });
-            }
-        });
-
-                $('#deleteAllEventsBtn').click(function () {
-            if (confirm("Are you sure you want to delete ALL event data? This cannot be undone.")) {
-                $.ajax({
-                    url: '@Url.Action("DeleteAllEvents", "DataImport")',
-                    type: 'POST',
-                    success: function (response) {
-                        alert(response.message || "All events deleted.");
-                    },
-                    error: function () {
-                        alert("An error occurred while deleting event data.");
-                    }
-                });
-            }
         });
     </script>
 }

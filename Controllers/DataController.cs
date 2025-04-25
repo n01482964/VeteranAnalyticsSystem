@@ -11,15 +11,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace VeteranAnalyticsSystem.Controllers
 {
-    public class DataImportController : Controller
+    public class DataController : Controller
     {
         private readonly GratitudeAmericaDbContext _context;
         private readonly FileImporterService _fileImporterService;
 
-        public DataImportController(GratitudeAmericaDbContext context)
+        public DataController(GratitudeAmericaDbContext context)
         {
             _context = context;
             _fileImporterService = new FileImporterService(context);
+        }
+
+        [HttpGet]
+        public IActionResult Index() // ✅ Changed from DataImport()
+        {
+            ViewBag.TotalVeterans = _context.Veterans.Count();
+            ViewBag.TotalEvents = _context.Events.Count();
+            return View(); // ✅ Will now look for Views/Data/Index.cshtml
         }
 
         [HttpPost]
@@ -87,7 +95,6 @@ namespace VeteranAnalyticsSystem.Controllers
             }
         }
 
-
         [HttpPost]
         public async Task<IActionResult> DeleteAllSurveys()
         {
@@ -138,7 +145,6 @@ namespace VeteranAnalyticsSystem.Controllers
                 return Json(new { success = false, message = $"Error deleting events: {ex.Message}" });
             }
         }
-
 
         private void SanitizeVeteranFields(Veteran vet)
         {
