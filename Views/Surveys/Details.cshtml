@@ -3,18 +3,14 @@
 @{
     ViewData["Title"] = "Survey Details";
 
-    // Update the dictionary keys to match the keys in Model.Responses.
-    // Adjust the questions as needed for your survey.
     var questionLookup = new Dictionary<string, string>
             {
-                // For example, if your CSV/Excel file produces keys "Q2", "Q3", etc.
                 ["Q2"] = "Unique 4-Digit Code",
                 ["Q3"] = "Level of Emotional Connection with Your Support Person/Veteran",
                 ["Q4"] = "Ability to Resolve Conflict with Your Support Person/Veteran",
                 ["Q5"] = "Likelihood to Share Past Struggles with Your Support Person/Veteran",
                 ["Q6"] = "Likelihood to Step Outside Your Comfort Zone",
                 ["Q7"] = "Motivation to Seek Support for Mental Wellness"
-                // You can add additional mappings for Q8, Q9, etc. if needed.
             };
 }
 
@@ -27,7 +23,7 @@
         </div>
         <div class="card-body">
             <p class="card-text">
-                <strong>Email (Veteran):</strong> @Model.Email <br />
+                <!-- Removed Email Field -->
                 <strong>Survey Type:</strong> @Model.SurveyType <br />
                 <strong>Submission Date:</strong> @Model.SubmissionDate.ToShortDateString()
             </p>
@@ -47,12 +43,8 @@
             <tbody>
                 @foreach (var kvp in Model.Responses)
                 {
-                    // Use the key from the CSV/Excel file (e.g., "Q2") to look up the corresponding question text.
                     var key = kvp.Key;
-                    var questionText = questionLookup.ContainsKey(key)
-                    ? questionLookup[key]
-                    : key; // fallback to the raw key if not found
-
+                    var questionText = questionLookup.ContainsKey(key) ? questionLookup[key] : key;
                     var answer = kvp.Value;
 
                     <tr>

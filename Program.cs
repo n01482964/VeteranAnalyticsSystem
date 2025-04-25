@@ -99,6 +99,12 @@ app.MapControllerRoute(
     pattern: "Surveys/{action=Index}/{id?}",
     defaults: new { controller = "Surveys", action = "Index" });
 
+// Route for Data Import Page
+app.MapControllerRoute(
+    name: "data",
+    pattern: "Data/{action=Index}/{id?}",
+    defaults: new { controller = "Data", action = "Index" });
+
 app.MapControllerRoute(
     name: "users",
     pattern: "Users/{action=Index}/{id?}",  // Default action will be "Index"

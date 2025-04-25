@@ -1,5 +1,4 @@
-﻿// FileImporterService.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -81,7 +80,7 @@ namespace VeteranAnalyticsSystem.Services
                     EventId = 0,
                     Responses = row.Where(kvp => !kvp.Key.Contains("Email", StringComparison.OrdinalIgnoreCase) &&
                                                   !kvp.Key.Contains("Timestamp", StringComparison.OrdinalIgnoreCase))
-                                   .ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+                                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
                 };
             }).ToList();
         }
@@ -124,15 +123,15 @@ namespace VeteranAnalyticsSystem.Services
                     SubmissionDate = submissionDate,
                     SurveyType = surveyType,
                     EventId = 0,
-                    Responses = responses.Where(kvp => !kvp.Key.Contains("Email", StringComparison.OrdinalIgnoreCase) &&
-                                                       !kvp.Key.Contains("Timestamp", StringComparison.OrdinalIgnoreCase))
-                                         .ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+                    Responses = responses
+                        .Where(kvp => !kvp.Key.Contains("Email", StringComparison.OrdinalIgnoreCase) &&
+                                      !kvp.Key.Contains("Timestamp", StringComparison.OrdinalIgnoreCase))
+                        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
                 });
             }
 
             return surveys;
         }
-
         public List<Veteran> ImportVeteransFromExcel(string filePath)
         {
             var veterans = new List<Veteran>();
@@ -349,27 +348,43 @@ namespace VeteranAnalyticsSystem.Services
         private DateTime ParseEventDateFromRange(string dateStr)
         {
             if (string.IsNullOrWhiteSpace(dateStr)) return DateTime.MinValue;
+
             try
             {
+                // Normalize spacing between month and day
                 dateStr = Regex.Replace(dateStr, @"([a-zA-Z]+)(\d)", "$1 $2").Trim();
-                dateStr = Regex.Replace(dateStr, @"\s*,\s*", ", ").Trim();
+                dateStr = Regex.Replace(dateStr, @"\s*,\s*", ", ", RegexOptions.None);
 
+                // Handle formats like "February 28-March 3, 2019"
+                var multiMonthMatch = Regex.Match(dateStr, @"([A-Za-z]+ \d+).*(\d{4})");
+                if (multiMonthMatch.Success)
+                {
+                    string monthDay = multiMonthMatch.Groups[1].Value;
+                    string year = multiMonthMatch.Groups[2].Value;
+                    string formatted = $"{monthDay}, {year}";
+
+                    if (DateTime.TryParse(formatted, out var parsedMultiMonth))
+                        return parsedMultiMonth;
+                }
+
+                // Fallback for normal format: e.g., "February 20-22, 2021"
                 var parts = dateStr.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length < 2) return DateTime.MinValue;
 
                 string month = parts[0];
                 string dayPart = parts[1];
-                string year = parts.Length >= 3 ? parts[2].Trim(',') : DateTime.Now.Year.ToString();
+                string yearPart = parts.Length >= 3 ? parts[2].Trim(',') : DateTime.Now.Year.ToString();
                 string startDay = dayPart.Contains('-') ? dayPart.Split('-')[0] : dayPart;
 
-                string formattedDate = $"{month} {startDay}, {year}";
-                return DateTime.TryParse(formattedDate, out var parsedDate) ? parsedDate : DateTime.MinValue;
+                string formattedDate = $"{month} {startDay}, {yearPart}";
+                return DateTime.TryParse(formattedDate, out var fallbackDate) ? fallbackDate : DateTime.MinValue;
             }
             catch
             {
                 return DateTime.MinValue;
             }
         }
+
 
         private List<Survey> FilterDuplicateSurveys(List<Survey> surveys)
         {

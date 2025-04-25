@@ -2,38 +2,56 @@
 
 <h1>Veteran Database</h1>
 
-<form method="post" asp-action="FilterVeterans" class="filter-form">
-    <label for="gender">Gender:</label>
-    <select name="gender" id="gender">
-        <option value="">All</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-        <option value="Other">Other</option>
-    </select>
+<div class="filter-container" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; align-items: end;">
+    <form method="post" asp-action="FilterVeterans" class="filter-form w-100" id="filterForm" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end;">
 
-    <label for="eventLocation">Retreat Location:</label>
-    <select name="eventLocation" id="eventLocation">
-        <option value="">All</option>
-        @if (ViewBag.EventLocations != null)
-        {
-            foreach (var loc in ViewBag.EventLocations as List<string>)
-            {
-                <option value="@loc">@loc</option>
-            }
-        }
-    </select>
+        <div style="display: flex; flex-direction: column;">
+            <label for="starRating">Star Rating:</label>
+            <select name="starRating" id="starRating" class="form-select">
+                <option value="">All</option>
+                <option value="0">Unrated</option>
+                <option value="1">1 ★</option>
+                <option value="2">2 ★</option>
+                <option value="3">3 ★</option>
+                <option value="4">4 ★</option>
+                <option value="5">5 ★</option>
+            </select>
+        </div>
 
-    <label for="eventDate">Retreat Date:</label>
-    <input type="date" name="eventDate" id="eventDate" />
+        <div style="display: flex; flex-direction: column;">
+            <label for="eventLocation">Retreat Location:</label>
+            <select name="eventLocation" id="eventLocation" class="form-select">
+                <option value="">All</option>
+                @if (ViewBag.EventLocations != null)
+                {
+                    foreach (var loc in ViewBag.EventLocations as List<string>)
+                    {
+                        <option value="@loc">@loc</option>
+                    }
+                }
+            </select>
+        </div>
 
-    <label for="startDate">Service Start Date:</label>
-    <input type="date" name="startDate" id="startDate" />
 
-    <label for="endDate">Service End Date:</label>
-    <input type="date" name="endDate" id="endDate" />
+        <div style="display: flex; flex-direction: column;">
+            <label for="startDate">Service Start Date:</label>
+            <input type="date" name="startDate" id="startDate" class="form-control" />
+        </div>
 
-    <button type="submit">Filter</button>
-</form>
+        <div style="display: flex; flex-direction: column;">
+            <label for="endDate">Service End Date:</label>
+            <input type="date" name="endDate" id="endDate" class="form-control" />
+        </div>
+
+        <div style="display: flex; flex-direction: row; gap: 0.5rem;">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <button class="btn btn-secondary" onclick="location.reload();">Refresh List</button>
+            <button type="button" class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>
+            <button type="button" class="btn btn-success" onclick="exportToCsv()">Export to CSV</button>
+        </div>
+    </form>
+</div>
+
 
 @if (Model == null || !Model.Any())
 {
@@ -41,7 +59,7 @@
 }
 else
 {
-    <table id="veteranTable" class="data-table display">
+    <table id="veteranTable" class="data-table display table table-striped table-bordered">
         <thead>
             <tr>
                 <th>First Name</th>
@@ -61,7 +79,7 @@ else
         <tbody>
             @foreach (var veteran in Model)
             {
-                <tr>
+                <tr data-veteran-id="@veteran.VeteranId">
                     <td>@veteran.FirstName</td>
                     <td>@veteran.LastName</td>
                     <td>@veteran.Gender</td>
@@ -71,7 +89,9 @@ else
                     <td>@veteran.StartOfService.ToShortDateString()</td>
                     <td>@veteran.EndOfService.ToShortDateString()</td>
                     <td>@veteran.Event?.Location</td>
-                    <td>@veteran.Event?.EventDate.ToShortDateString()</td>
+                    <td data-order="@veteran.Event?.EventDate.ToString("yyyy-MM-dd")">
+                        @veteran.Event?.EventDate.ToShortDateString()
+                    </td>
                     <td>
                         @(veteran.StarRating.HasValue ? $"{veteran.StarRating} ★" : "Unrated")
                     </td>
@@ -97,5 +117,65 @@ else
                 pageLength: 10
             });
         });
+
+        function clearFilters() {
+            $('#starRating').val('');
+            $('#eventLocation').val('');
+            $('#startDate').val('');
+            $('#endDate').val('');
+            $('#filterForm').submit();
+        }
+
+        function exportToCsv() {
+            // Collect VeteranIds from table rows
+            let veteranIds = [];
+            $('#veteranTable tbody tr').each(function () {
+                veteranIds.push($(this).data('veteran-id'));
+            });
+
+            if (veteranIds.length === 0) {
+                alert("No veterans to export.");
+                return;
+            }
+
+            const outputFileName = prompt("Enter the output CSV file name (without extension):", "VeteransExport");
+            if (!outputFileName) {
+                return;
+            }
+
+            $.ajax({
+                url: '/Veterans/ExportToCsv',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ veteranIds: veteranIds, outputFileName: outputFileName }),
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function (blob, status, xhr) {
+                    // Safely extract filename from the header
+                    const contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                    let fileName = "VeteransExport.csv"; // fallback
+
+                    if (contentDisposition) {
+                        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+                        if (matches != null && matches[1]) {
+                            fileName = matches[1].replace(/['"]/g, '');
+                        }
+                    }
+
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                },
+                error: function () {
+                    alert("Error exporting CSV.");
+                }
+            });
+        }
     </script>
 }

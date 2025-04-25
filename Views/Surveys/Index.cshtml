@@ -1,32 +1,6 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
-}
-@model List<VeteranAnalyticsSystem.Models.Survey>
-@{
-    ViewData["Title"] = "Survey Database";
-}
+﻿@model List<VeteranAnalyticsSystem.Models.Survey>
 
 <h1>Survey Database</h1>
-
-<!-- Optional Filter Form -->
-<form method="post" asp-action="FilterSurveys" class="filter-form">
-    <label for="surveyType">Survey Type:</label>
-    <select name="surveyType" id="surveyType">
-        <option value="">All</option>
-        <option value="PreRetreat">Pre-Retreat</option>
-        <option value="PostRetreat">Post-Retreat</option>
-    </select>
-
-    <label for="startDate">Submission Start Date:</label>
-    <input type="date" name="startDate" id="startDate" />
-
-    <label for="endDate">Submission End Date:</label>
-    <input type="date" name="endDate" id="endDate" />
-
-    <button type="submit">Filter</button>
-</form>
 
 @if (Model == null || !Model.Any())
 {
@@ -34,14 +8,13 @@
 }
 else
 {
-    <table id="surveyTable" class="data-table display">
+    <table id="surveyTable" class="data-table display table table-striped table-bordered">
         <thead>
             <tr>
-                <th>Survey ID</th>
-                <th>Email</th>
-                <th>Survey Type</th>
                 <th>Submission Date</th>
-                <th>Responses (JSON)</th>
+                <th>Survey Type</th>
+                <th>Comfort Zone Response</th>
+                <th>Motivation Response</th>
                 <th>Details</th>
             </tr>
         </thead>
@@ -49,21 +22,28 @@ else
             @foreach (var survey in Model)
             {
                 <tr>
-                    <td>@survey.SurveyId</td>
-                    <td>@survey.Email</td>
-                    <td>@survey.SurveyType</td>
                     <td>@survey.SubmissionDate.ToShortDateString()</td>
+                    <td>@survey.SurveyType</td>
                     <td>
-                        @if (!string.IsNullOrEmpty(survey.ResponsesJson))
-                        {
-                            <!-- Optionally, display only the first 50 characters of the JSON -->
-                            @(survey.ResponsesJson.Length > 50
-                                ? survey.ResponsesJson.Substring(0, 50) + "..."
-                                : survey.ResponsesJson)
-                        }
+                        @(
+                            survey.Responses.TryGetValue(
+                            "How likely are you to step outside of your comfort zone to try to things?",
+                            out var comfortZone
+                            ) ? comfortZone : "N/A"
+                            )
                     </td>
                     <td>
-                        <a asp-action="Details" asp-controller="Surveys" asp-route-id="@survey.SurveyId" target="_blank">View Details</a>
+                        @(
+                            survey.Responses.TryGetValue(
+                            "Please rate your motivation to seek private, government, or nonprofit support for your mental wellness and personal growth opportunities such as counseling, therapy, or programs like MSR and Warrior PATHH.",
+                            out var motivation
+                            ) ? motivation : "N/A"
+                            )
+                    </td>
+                    <td>
+                        <a asp-action="Details" asp-controller="Surveys" asp-route-id="@survey.SurveyId" class="btn btn-sm btn-outline-primary" target="_blank">
+                            View Details
+                        </a>
                     </td>
                 </tr>
             }
@@ -75,11 +55,11 @@ else
     <script>
         $(document).ready(function () {
             $('#surveyTable').DataTable({
-                paging: true,      // Enable pagination
-                searching: true,   // Enable searching
-                ordering: true,    // Enable column sorting
-                responsive: true,  // Make the table responsive
-                pageLength: 10     // Set the number of rows per page
+                paging: true,
+                searching: true,
+                ordering: true,
+                responsive: true,
+                pageLength: 10
             });
         });
     </script>

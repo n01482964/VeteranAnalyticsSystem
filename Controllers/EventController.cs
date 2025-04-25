@@ -46,18 +46,39 @@ namespace VeteranAnalyticsSystem.Controllers
             return View(events);
         }
 
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int? id)
         {
+            if (id == null) return NotFound();
+
             var evt = await _context.Events
                 .Include(e => e.Veterans)
                 .FirstOrDefaultAsync(e => e.EventId == id);
 
             if (evt == null) return NotFound();
-            return View(evt);
+
+            var eventStart = evt.EventDate;
+            var veteranEmails = evt.Veterans.Select(v => v.Email).ToList();
+            var postRetreatDate = eventStart.AddDays(2);
+
+            var surveys = await _context.Surveys
+                .Where(s => veteranEmails.Contains(s.Email)
+                    && s.SurveyType == SurveyType.PostRetreat
+                    && s.SubmissionDate.Date == postRetreatDate.Date)
+                .ToListAsync();
+
+            var viewModel = new EventDetailsViewModel
+            {
+                Event = evt,
+                Veterans = evt.Veterans.ToList(),
+                MatchedSurveys = surveys
+            };
+
+            return View(viewModel);
         }
 
-// Summary route (could be used for direct links)
-public async Task<IActionResult> EventSummary()
+
+        // Summary route (could be used for direct links)
+        public async Task<IActionResult> EventSummary()
         {
             var events = await _context.Events
                 .Include(e => e.Veterans)

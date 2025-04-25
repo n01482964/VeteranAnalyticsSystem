@@ -29,7 +29,6 @@ namespace VeteranAnalyticsSystem.Models
         public int EventId { get; set; }
 
         // Enum to distinguish between pre- and post-retreat surveys.
-        // Marked as Required and given a default value.
         [Required]
         [Display(Name = "Survey Type")]
         public SurveyType SurveyType { get; set; } = SurveyType.PreRetreat;
@@ -57,19 +56,41 @@ namespace VeteranAnalyticsSystem.Models
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     Responses = new Dictionary<string, string>();
+                    return;
                 }
-                else
+
+                try
                 {
-                    try
-                    {
-                        var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(value);
-                        Responses = dict ?? new Dictionary<string, string>();
-                    }
-                    catch
-                    {
-                        Responses = new Dictionary<string, string>();
-                    }
+                    var raw = JsonSerializer.Deserialize<Dictionary<string, string>>(value);
+
+                    // Decode any escaped unicode in the values (e.g., \u0027 => ')
+                    Responses = raw?.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => DecodeEscapedJsonValue(kvp.Value)
+                    ) ?? new Dictionary<string, string>();
                 }
+                catch
+                {
+                    Responses = new Dictionary<string, string>();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decodes escaped unicode (e.g., \u0027) from JSON-encoded string values
+        /// </summary>
+        private static string DecodeEscapedJsonValue(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return input;
+
+            try
+            {
+                // Wrap input in quotes to mimic full JSON string, then deserialize
+                return JsonSerializer.Deserialize<string>($"\"{input}\"") ?? input;
+            }
+            catch
+            {
+                return input;
             }
         }
     }
