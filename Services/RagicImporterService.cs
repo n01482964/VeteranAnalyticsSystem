@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using VeteranAnalyticsSystem.Data;
 using VeteranAnalyticsSystem.Models;
 
@@ -15,39 +18,53 @@ namespace VeteranAnalyticsSystem.Services
     {
         private readonly GratitudeAmericaDbContext _context;
         private readonly HttpClient _httpClient;
+        private readonly string _apiUrl;
 
-        private const string RagicApiUrl = "https://www.ragic.com/YOUR_ACCOUNT/database/1";
-        private const string ApiKey = "bEh2YUVIYm5PRHVkb2lMQTlnc3YxTHBTblF5TWQ1ZGZkc2xJYU9ENWZIOVA1Y3BGWXJkS2ZtOUJKQys3cEp2cg==";
-
-        public RagicImporterService(GratitudeAmericaDbContext context, HttpClient httpClient)
+        public RagicImporterService(GratitudeAmericaDbContext context, IConfiguration config)
         {
             _context = context;
-            _httpClient = httpClient;
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", ApiKey);
+            _httpClient = new HttpClient();
+
+            var apiKey = config["RagicAPIKey"];
+            _apiUrl = config.GetValue<string>("RagicAPIUrl"); 
+
+            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(_apiUrl))
+                throw new Exception("Ragic API configuration is missing.");
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", apiKey);
         }
 
-        public async Task<List<Veteran>> ImportVeteransBatchAsync(int skip = 0)
+        public async Task<List<Veteran>> SyncVeteransFromRagicAsync()
         {
-            var requestUrl = $"{RagicApiUrl}?api&limit=100&offset={skip}";
-            var response = await _httpClient.GetAsync(requestUrl);
-
+            var response = await _httpClient.GetAsync($"{_apiUrl}?api");
             if (!response.IsSuccessStatusCode)
-                throw new Exception("Failed to fetch data from Ragic.");
+                throw new Exception("Failed to fetch Ragic data");
 
             var json = await response.Content.ReadAsStringAsync();
-            var ragicRecords = JsonSerializer.Deserialize<List<RagicVeteranDto>>(json);
+            var ragicRecordsDictionary = JsonSerializer.Deserialize<Dictionary<string, RagicVeteranDto>>(json);
+            var ragicRecords = ragicRecordsDictionary.Select(x=>x.Value).ToList();
 
             var importedVeterans = new List<Veteran>();
 
+            int count = 0;
             foreach (var record in ragicRecords)
             {
-                if (string.IsNullOrWhiteSpace(record.Email)) continue;
-                if (_context.Veterans.Any(v => v.Email == record.Email && v.Event.EventDate == record.EventDate)) continue;
+                if (count >= 100) break;
+                count++;
 
+                if (string.IsNullOrWhiteSpace(record.Email))
+                    continue;
+
+                DateTime eventDate = record.EventDate == default ? DateTime.Now : record.EventDate;
                 string location = NormalizeStateAndLocation(record.EventLocation);
-                DateTime eventDate = record.EventDate == DateTime.MinValue ? DateTime.Now : record.EventDate;
 
-                var evt = await _context.Events.FirstOrDefaultAsync(e => e.Location == location && e.EventDate.Date == eventDate.Date);
+                // Avoid duplicate veterans
+                if (_context.Veterans.Any(v => v.Email == record.Email && v.Event.EventDate.Date == eventDate.Date))
+                    continue;
+
+                var evt = await _context.Events.FirstOrDefaultAsync(e =>
+                    e.Location == location && e.EventDate.Date == eventDate.Date);
+
                 if (evt == null)
                 {
                     evt = new Event { Location = location, EventDate = eventDate };
@@ -60,14 +77,14 @@ namespace VeteranAnalyticsSystem.Services
                     VeteranId = Guid.NewGuid().ToString(),
                     FirstName = record.FirstName ?? "",
                     LastName = record.LastName ?? "",
-                    Email = record.Email ?? "",
+                    Email = record.Email,
                     PhoneNumber = record.PhoneNumber ?? "",
-                    Gender = record.Gender ?? "",
-                    StartOfService = record.StartOfService == DateTime.MinValue ? DateTime.Now : record.StartOfService,
-                    EndOfService = record.EndOfService == DateTime.MinValue ? DateTime.Now : record.EndOfService,
-                    DateOfBirth = record.DateOfBirth == DateTime.MinValue ? DateTime.Now : record.DateOfBirth,
-                    BranchOfService = record.BranchOfService ?? "",
-                    HealthConcerns = RemoveParenthesesContent(record.HealthConcerns ?? ""),
+                    Gender = record.Gender ?? "Unknown",
+                    StartOfService = record.StartOfService == default ? DateTime.Now : record.StartOfService,
+                    EndOfService = record.EndOfService == default ? DateTime.Now : record.EndOfService,
+                    DateOfBirth = record.DateOfBirth == default ? DateTime.Now : record.DateOfBirth,
+                    BranchOfService = record.BranchOfService ?? "Unknown",
+                    HealthConcerns = RemoveParenthesesContent(record.HealthConcerns ?? "None"),
                     AdditionalHealthInfo = record.AdditionalHealthInfo ?? "None",
                     HomeAddress = record.HomeAddress ?? "Unknown",
                     City = record.City ?? "Unknown",
@@ -89,91 +106,45 @@ namespace VeteranAnalyticsSystem.Services
             return importedVeterans;
         }
 
-
         private static string NormalizeStateAndLocation(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return "Unknown";
             var parts = input.Split('-', StringSplitOptions.RemoveEmptyEntries);
-            string locationPart = parts.Length > 0 ? parts[0].Trim() : "Unknown";
+            string location = parts.Length > 0 ? parts[0].Trim() : "Unknown";
 
-            if (locationPart.Contains(","))
+            if (location.Contains(','))
             {
-                var locParts = locationPart.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                var locParts = location.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 if (locParts.Length == 2)
-                {
-                    string city = locParts[0].Trim();
-                    string state = NormalizeState(locParts[1].Trim());
-                    return $"{city}, {state}";
-                }
+                    return $"{locParts[0].Trim()}, {NormalizeState(locParts[1].Trim())}";
             }
-            return NormalizeState(locationPart);
+
+            return NormalizeState(location);
         }
 
         private static string NormalizeState(string input)
         {
-            if (string.IsNullOrWhiteSpace(input)) return "UNKNOWN";
-
             var stateMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 ["florida"] = "FL",
                 ["fl"] = "FL",
                 ["georgia"] = "GA",
                 ["ga"] = "GA"
-                // Add other states as needed
+                // Add more states as needed
             };
-
-            return stateMap.TryGetValue(input.Trim().ToLowerInvariant(), out var abbr)
-                ? abbr
-                : input.ToUpperInvariant();
-        }
-
-        private DateTime ParseEventDateFromRange(string dateStr)
-        {
-            if (string.IsNullOrWhiteSpace(dateStr)) return DateTime.MinValue;
-
-            try
-            {
-                dateStr = Regex.Replace(dateStr, @"([a-zA-Z]+)(\d)", "$1 $2").Trim();
-                dateStr = Regex.Replace(dateStr, @"\s*,\s*", ", ", RegexOptions.None);
-
-                var multiMonthMatch = Regex.Match(dateStr, @"([A-Za-z]+ \d+).*(\d{4})");
-                if (multiMonthMatch.Success)
-                {
-                    string monthDay = multiMonthMatch.Groups[1].Value;
-                    string year = multiMonthMatch.Groups[2].Value;
-                    string formatted = $"{monthDay}, {year}";
-
-                    if (DateTime.TryParse(formatted, out var parsedMultiMonth))
-                        return parsedMultiMonth;
-                }
-
-                var parts = dateStr.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length < 2) return DateTime.MinValue;
-
-                string month = parts[0];
-                string dayPart = parts[1];
-                string yearPart = parts.Length >= 3 ? parts[2].Trim(',') : DateTime.Now.Year.ToString();
-                string startDay = dayPart.Contains('-') ? dayPart.Split('-')[0] : dayPart;
-
-                string formattedDate = $"{month} {startDay}, {yearPart}";
-                return DateTime.TryParse(formattedDate, out var fallbackDate) ? fallbackDate : DateTime.MinValue;
-            }
-            catch
-            {
-                return DateTime.MinValue;
-            }
+            return stateMap.TryGetValue(input.Trim(), out var abbr) ? abbr : input.ToUpperInvariant();
         }
 
         private static string RemoveParenthesesContent(string input)
         {
-            if (string.IsNullOrWhiteSpace(input)) return input;
-            return Regex.Replace(input, @"\s*\([^)]*\)", "").Trim();
+            return Regex.Replace(input ?? "", @"\s*\([^)]*\)", "").Trim();
         }
 
         private class RagicVeteranDto
         {
             public string FirstName { get; set; }
             public string LastName { get; set; }
+            [JsonPropertyName("Veteran E-mail Address")]
             public string Email { get; set; }
             public string PhoneNumber { get; set; }
             public string Gender { get; set; }
@@ -182,7 +153,7 @@ namespace VeteranAnalyticsSystem.Services
             public DateTime DateOfBirth { get; set; }
             public string BranchOfService { get; set; }
             public string HealthConcerns { get; set; }
-            public string AdditionalHealthInfo { get; set; }  // ✅ Added this property
+            public string AdditionalHealthInfo { get; set; }
             public string HomeAddress { get; set; }
             public string City { get; set; }
             public string State { get; set; }
@@ -194,8 +165,6 @@ namespace VeteranAnalyticsSystem.Services
             public int NumberOfDeployments { get; set; }
             public string EventLocation { get; set; }
             public DateTime EventDate { get; set; }
-            public string EventDateRaw { get; set; }  // Optional, if you're handling date parsing manually
         }
-
     }
 }

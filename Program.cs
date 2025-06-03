@@ -4,12 +4,17 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using VeteranAnalyticsSystem.Data;
 using VeteranAnalyticsSystem.Models;
+using VeteranAnalyticsSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddUserSecrets<Program>();
 
 // Configure EF Core with your DB context
 builder.Services.AddDbContext<GratitudeAmericaDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+//Configure RagicImporterService
+builder.Services.AddScoped<RagicImporterService>();
 
 // Configure Identity and Roles
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
