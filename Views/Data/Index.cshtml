@@ -1,107 +1,105 @@
 ﻿@{
-    ViewData["Title"] = "DataImport";
+    ViewData["Title"] = "Data Import";
 }
 
-<div class="container-fluid mt-4">
+<div class="container mt-5">
     <div class="text-center mb-4">
-        <h1 class="display-4">Data Import Management</h1>
+        <h2>Data Import & Sync</h2>
+        <div id="syncStatus" class="alert alert-info d-none" role="alert">Database is up to date</div>
     </div>
 
-    <div class="row justify-content-center mb-5">
-        <div class="col-lg-8">
-            <h2>Import Files</h2>
-            <p>Current number of veterans: <strong>@ViewBag.TotalVeterans</strong></p>
-
-            <form id="importForm" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label>Select CSV or Excel file to import:</label>
-                    <input type="file" name="uploadFile" class="form-control-file" accept=".csv,.xlsx,.xls" />
-                </div>
-                <div class="form-group">
-                    <label for="fileType">Select File Type:</label>
-                    <select id="fileType" name="fileType" class="form-control">
-                        <option value="VeteranData">Veteran Data</option>
-                        <option value="PreRetreatSurvey">PreRetreat Survey</option>
-                        <option value="PostRetreatSurvey">PostRetreat Survey</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-success">Upload File</button>
-            </form>
-
-            <button id="deleteAllVeteransBtn" class="btn btn-warning mt-2">Delete All Veterans</button>
-            <button id="deleteAllSurveysBtn" class="btn btn-warning mt-2">Delete All Survey Data</button>
-            <button id="deleteAllEventsBtn" class="btn btn-warning mt-2">Delete All Events</button>
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-6 text-center">
+            <button id="syncRagic" class="btn btn-primary btn-lg mb-2">Ragic Database Sync</button>
+            <div id="ragicSyncTime" class="text-muted">Last Ragic Sync: Never</div>
+        </div>
+        <div class="col-md-6 text-center">
+            <button id="syncGoogle" class="btn btn-info btn-lg mb-2">Google Forms Database Sync</button>
+            <div id="googleSyncTime" class="text-muted">Last Google Sync: Never</div>
         </div>
     </div>
+
+    <hr />
+
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-4 text-center">
+            <button id="deleteAllVeteransBtn" class="btn btn-warning mb-2">Clear All Veterans</button>
+        </div>
+        <div class="col-md-4 text-center">
+            <button id="deleteAllSurveysBtn" class="btn btn-warning mb-2">Clear All Surveys</button>
+        </div>
+        <div class="col-md-4 text-center">
+            <button id="deleteAllEventsBtn" class="btn btn-warning mb-2">Clear All Events</button>
+        </div>
+    </div>
+
+    <div class="col-md-5 mb-3">
+        <button id="clearAzureDb" class="btn btn-danger mb-2">Clear Azure SQL Veterans</button>
+        <div id="azureClearStatus" class="text-muted">Last Cleared: Never</div>
+    </div>
+
+
+    <form method="post" action="/data/import"> 
+        <button> Ragic Import Real</button> 
+        <input name="fileType" value="VeteranData" />
+    </form>
 </div>
 
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
         $(document).ready(function () {
-            $('#importForm').submit(function (e) {
-                e.preventDefault();
-                var formData = new FormData(this);
-                $.ajax({
-                    url: '@Url.Action("Import", "Data")',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function (response) {
-                        alert(response.message || "File imported successfully.");
-                        location.reload();
-                    },
-                    error: function () {
-                        alert("An error occurred during the file upload.");
-                    }
+            // Load last sync times
+            $.get('@Url.Action("GetLastSyncTimes", "Data")', function (data) {
+                $('#ragicSyncTime').text('Last Ragic Sync: ' + data.ragic);
+                $('#googleSyncTime').text('Last Google Sync: ' + data.google);
+            });
+
+            $('#syncRagic').click(function () {
+                $.post('@Url.Action("SyncRagicDatabase", "Data")', function (data) {
+                    $('#syncStatus').removeClass('d-none').text(data.message);
+                    $('#ragicSyncTime').text('Last Ragic Sync: ' + data.lastSync);
+                });
+            });
+
+            $('#syncGoogle').click(function () {
+                $.post('@Url.Action("SyncGoogleFormsDatabase", "Data")', function (data) {
+                    $('#syncStatus').removeClass('d-none').text(data.message);
+                    $('#googleSyncTime').text('Last Google Sync: ' + data.lastSync);
                 });
             });
 
             $('#deleteAllSurveysBtn').click(function () {
                 if (confirm("Delete ALL surveys?")) {
-                    $.ajax({
-                        url: '@Url.Action("DeleteAllSurveys", "DataImport")',
-                        type: 'POST',
-                        success: function (response) {
-                            alert(response.message || "All surveys deleted.");
-                        },
-                        error: function () {
-                            alert("Error deleting surveys.");
-                        }
+                    $.post('@Url.Action("DeleteAllSurveys", "Data")', function (data) {
+                        alert(data.message);
                     });
                 }
             });
 
             $('#deleteAllVeteransBtn').click(function () {
                 if (confirm("Delete ALL veterans?")) {
-                    $.ajax({
-                        url: '@Url.Action("DeleteAllVeterans", "DataImport")',
-                        type: 'POST',
-                        success: function (response) {
-                            alert(response.message || "All veterans deleted.");
-                        },
-                        error: function () {
-                            alert("Error deleting veterans.");
-                        }
+                    $.post('@Url.Action("DeleteAllVeterans", "Data")', function (data) {
+                        alert(data.message);
                     });
                 }
             });
 
             $('#deleteAllEventsBtn').click(function () {
                 if (confirm("Delete ALL events?")) {
-                    $.ajax({
-                        url: '@Url.Action("DeleteAllEvents", "DataImport")',
-                        type: 'POST',
-                        success: function (response) {
-                            alert(response.message || "All events deleted.");
-                        },
-                        error: function () {
-                            alert("Error deleting events.");
-                        }
+                    $.post('@Url.Action("DeleteAllEvents", "Data")', function (data) {
+                        alert(data.message);
                     });
                 }
             });
+
+            $('#clearAzureDb').click(function () {
+                $.post('@Url.Action("ClearAzureDatabase", "Data")', function (data) {
+                    $('#syncStatus').text(data.message);
+                    $('#azureClearStatus').text('Last Cleared: ' + data.lastCleared);
+            });
+        });
+
         });
     </script>
 }
