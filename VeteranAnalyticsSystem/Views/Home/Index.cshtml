@@ -1,0 +1,134 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<h1 style="text-align: center; margin-bottom: 30px;">Welcome to the Veteran Application System</h1>
+
+<!-- Summary Boxes -->
+<div style="display: flex; justify-content: center; gap: 40px; margin-bottom: 40px; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 280px; max-width: 300px; padding: 25px; background-color: #b34c4c; color: white; text-align: center; border-radius: 12px;">
+        <h2>Total Veterans</h2>
+        <p style="font-size: 36px; font-weight: bold;">@ViewBag.TotalVeterans</p>
+    </div>
+    <div style="flex: 1; min-width: 280px; max-width: 300px; padding: 25px; background-color: #b34c4c; color: white; text-align: center; border-radius: 12px;">
+        <h2>Total Events</h2>
+        <p style="font-size: 36px; font-weight: bold;">@ViewBag.TotalEvents</p>
+    </div>
+</div>
+
+<!-- Static Charts (ONLY Gender and Branch) -->
+<div style="display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; margin-bottom: 40px;">
+    <div style="flex: 1; min-width: 400px; max-width: 480px;">
+        <h3 style="text-align: center;">Gender Distribution</h3>
+        <canvas id="genderChart"></canvas>
+    </div>
+    <div style="flex: 1; min-width: 400px; max-width: 480px;">
+        <h3 style="text-align: center;">Branch Distribution</h3>
+        <canvas id="branchChart"></canvas>
+    </div>
+</div>
+
+<!-- Interactive Analytics Button -->
+<div style="display: flex; justify-content: center; margin-bottom: 60px;">
+    <button id="openModal" style="padding: 14px 28px; font-size: 16px; font-weight: bold; background-color: #757575; color: white; border: none; border-radius: 10px; cursor: pointer;">
+        Open Interactive Analytics
+    </button>
+</div>
+
+<!-- Interactive Modal -->
+<div id="interactiveModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
+    <div style="position: absolute; top: 5%; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 20px; border-radius: 10px; width: 90%; max-width: 700px;">
+        <h2>Interactive Analytics</h2>
+        <label for="xAxisType">X-Axis:</label>
+        <select id="xAxisType">
+            <option value="gender">Gender</option>
+            <option value="branch">Branch</option>
+            <option value="age">Age</option>
+        </select>
+
+        <label for="chartType">Chart Type:</label>
+        <select id="chartType">
+            <option value="bar">Bar</option>
+            <option value="pie">Pie</option>
+            <option value="line">Line</option>
+            <option value="radar">Radar</option>
+        </select>
+
+        <button id="updateChart" style="margin: 10px 0; padding: 10px;">Update</button>
+        <canvas id="interactiveChart" style="width: 100%; height: 300px;"></canvas>
+        <button id="closeModal" style="margin-top: 10px; padding: 10px; background-color: #b34c4c; color: white;">Close</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const genderLabels = @Html.Raw(Json.Serialize(ViewBag.GenderLabels ?? new List<string>()));
+        const genderData = @Html.Raw(Json.Serialize(ViewBag.GenderData ?? new List<int>()));
+        const ageLabels = @Html.Raw(Json.Serialize(ViewBag.AgeRangeLabels ?? new List<string>()));
+        const ageData = @Html.Raw(Json.Serialize(ViewBag.AgeRangeData ?? new List<int>()));
+        const branchLabels = @Html.Raw(Json.Serialize(ViewBag.BranchLabels ?? new List<string>()));
+        const branchData = @Html.Raw(Json.Serialize(ViewBag.BranchData ?? new List<int>()));
+
+        // Static Charts
+        new Chart(document.getElementById('genderChart'), {
+            type: 'pie',
+            data: {
+                labels: genderLabels,
+                datasets: [{ data: genderData, backgroundColor: ['#4774ac', '#b34c4c', '#FFCE56'] }]
+            }
+        });
+
+        new Chart(document.getElementById('branchChart'), {
+            type: 'bar',
+            data: {
+                labels: branchLabels,
+                datasets: [{ label: 'Branch', data: branchData, backgroundColor: '#b34c4c' }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+
+        // Interactive Modal Logic
+        let chart;
+        const ctx = document.getElementById('interactiveChart').getContext('2d');
+
+        document.getElementById('openModal').addEventListener('click', () => {
+            document.getElementById('interactiveModal').style.display = 'block';
+            createInteractiveChart('bar', genderLabels, genderData, 'Gender Distribution');
+        });
+
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('interactiveModal').style.display = 'none';
+        });
+
+        document.getElementById('updateChart').addEventListener('click', () => {
+            const xAxisType = document.getElementById('xAxisType').value;
+            const chartType = document.getElementById('chartType').value;
+
+            let labels = [], data = [], title = '';
+
+            switch (xAxisType) {
+                case 'gender': labels = genderLabels; data = genderData; title = 'Gender Distribution'; break;
+                case 'branch': labels = branchLabels; data = branchData; title = 'Branch Distribution'; break;
+                case 'age': labels = ageLabels; data = ageData; title = 'Age Distribution'; break;
+            }
+
+            createInteractiveChart(chartType, labels, data, title);
+        });
+
+        function createInteractiveChart(type, labels, data, title) {
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: title,
+                        data: data,
+                        backgroundColor: ['#4774ac', '#b34c4c', '#FFCE56', '#6f9cd4', '#ab5b5b']
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+    </script>
+}
