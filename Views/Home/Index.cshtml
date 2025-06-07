@@ -61,7 +61,6 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const genderLabels = @Html.Raw(Json.Serialize(ViewBag.GenderLabels ?? new List<string>()));
         const genderData = @Html.Raw(Json.Serialize(ViewBag.GenderData ?? new List<int>()));
