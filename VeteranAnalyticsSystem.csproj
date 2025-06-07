@@ -5,6 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>7e0bc489-351a-499a-9ab9-77be0d315a77</UserSecretsId>
 		<DisableWorkloadAutoImport>true</DisableWorkloadAutoImport>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>

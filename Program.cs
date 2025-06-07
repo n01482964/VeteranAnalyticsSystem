@@ -17,12 +17,9 @@ builder.Services.AddDbContext<GratitudeAmericaDbContext>(options =>
 builder.Services.AddScoped<RagicImporterService>();
 
 // Configure Identity and Roles
-builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
-{
-    options.SignIn.RequireConfirmedAccount = false;
-})
-.AddRoles<IdentityRole>()
-.AddEntityFrameworkStores<GratitudeAmericaDbContext>();
+builder.Services.AddDefaultIdentity<ApplicationUser>()
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<GratitudeAmericaDbContext>();
 
 // ✅ Keep global policy, but exclude Identity UI
 builder.Services.AddControllersWithViews(options =>
