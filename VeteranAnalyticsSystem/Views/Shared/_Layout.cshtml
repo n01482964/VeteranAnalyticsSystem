@@ -39,19 +39,19 @@
                             <li class="nav-item"><a class="nav-link" asp-controller="Users" asp-action="Settings">Account</a></li>
                         }
                     </ul>
-                    <ul class="navbar-nav ms-auto">
-                        @if (isAuthenticated)
-                        {
-                            <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post" id="logoutForm" class="d-inline">
-                                <button type="submit" class="btn btn-link" style="color: white; text-decoration: underline;">Logout</button>
-                            </form>
-                        }
-                        else
-                        {
+                    @if (isAuthenticated)
+                    {
+                        <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post" id="logoutForm" class="d-inline">
+                            <button type="submit" class="btn btn-link text-secondary text-decoration-none">Logout</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <ul class="navbar-nav ms-auto">
                             <li class="nav-item"><a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Login</a></li>
                             <li class="nav-item"><a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Register</a></li>
-                        }
-                    </ul>
+                        </ul>
+                    }
                 </div>
             </div>
         </nav>

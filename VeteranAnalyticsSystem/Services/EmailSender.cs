@@ -30,10 +30,15 @@ public class EmailSender : IEmailSender
 
     public async Task Execute(string apiKey, string subject, string message, string toEmail)
     {
+        if (string.IsNullOrEmpty(Options.FromEmail))
+        {
+            throw new Exception("Null FromEmail");
+        }
+
         var client = new SendGridClient(apiKey);
         var msg = new SendGridMessage()
         {
-            From = new EmailAddress("Joe@contoso.com", "Password Recovery"),
+            From = new EmailAddress(Options.FromEmail),
             Subject = subject,
             PlainTextContent = message,
             HtmlContent = message
@@ -44,6 +49,9 @@ public class EmailSender : IEmailSender
         // See https://sendgrid.com/docs/User_Guide/Settings/tracking.html
         msg.SetClickTracking(false, false);
         var response = await client.SendEmailAsync(msg);
+
+        var responseContent = await response.DeserializeResponseBodyAsync();
+
         _logger.LogInformation(response.IsSuccessStatusCode
                                ? $"Email to {toEmail} queued successfully!"
                                : $"Failure Email to {toEmail}");
