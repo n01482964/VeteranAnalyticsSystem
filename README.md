@@ -4,10 +4,12 @@ Veteran Analytics System is a .NET web application meant to provide a dashboard 
 
 ## Local Setup
 
-1. In your user secrets, you will need the Ragic Api Key
+1. You will need the following in your user secrets
     ```
     {
-      "RagicAPIKey": "[YourApiKey]"
+      "RagicAPIKey": "[ApiKey]",
+      "SendGridKey": "[ApiKey]",
+      "FromEmail":  "[FromEmail]"
     }
     ```
 1. Publish the database to your local sql server instance. The default database name is `VeteranAnalytics`
