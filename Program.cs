@@ -16,6 +16,9 @@ builder.Services.AddDbContext<GratitudeAmericaDbContext>(options =>
 //Configure RagicImporterService
 builder.Services.AddScoped<RagicImporterService>();
 
+//Configure GoogleFormsImporterService
+builder.Services.AddHttpClient<GoogleFormsImporterService>();
+
 // Configure Identity and Roles
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {

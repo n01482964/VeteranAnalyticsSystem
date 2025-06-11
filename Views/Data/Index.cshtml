@@ -63,11 +63,12 @@
             });
 
             $('#syncGoogle').click(function () {
-                $.post('@Url.Action("SyncGoogleFormsDatabase", "Data")', function (data) {
+                $.post('@Url.Action("ImportFromGoogleForms", "Survey")', function (data) {
                     $('#syncStatus').removeClass('d-none').text(data.message);
                     $('#googleSyncTime').text('Last Google Sync: ' + data.lastSync);
                 });
             });
+
 
             $('#deleteAllSurveysBtn').click(function () {
                 if (confirm("Delete ALL surveys?")) {

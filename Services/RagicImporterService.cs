@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -46,17 +47,46 @@ namespace VeteranAnalyticsSystem.Services
 
             var importedVeterans = new List<Veteran>();
 
-            int count = 0;
+            //int count = 0;
             foreach (var record in ragicRecords)
             {
-                if (count >= 100) break;
-                count++;
+                //if (count >= 100) break;
+                //count++;
 
                 if (string.IsNullOrWhiteSpace(record.Email))
                     continue;
 
-                DateTime eventDate = record.EventDate == default ? DateTime.Now : record.EventDate;
-                string location = NormalizeStateAndLocation(record.EventLocation);
+                string rawEvent = record.EventLocationDate ?? "";
+                string location = "Unknown";
+                DateTime eventDate = DateTime.Now;
+
+                if (!string.IsNullOrWhiteSpace(rawEvent))
+                {
+                    // Expected format: "Lake Oconee, Georgia - April 25-28, 2019"
+                    var parts = rawEvent.Split(" - ", StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 2)
+                    {
+                        location = NormalizeStateAndLocation(parts[0]);
+
+                        // Parse the date range, e.g., "April 25-28, 2019"
+                        var dateRange = parts[1];
+
+                        // Match the start day and year from the range (assumes format like: "April 25-28, 2019")
+                        var dateMatch = Regex.Match(dateRange, @"(?<month>\w+)\s+(?<day>\d{1,2})-\d{1,2},\s*(?<year>\d{4})");
+
+                        if (dateMatch.Success)
+                        {
+                            string month = dateMatch.Groups["month"].Value;
+                            string day = dateMatch.Groups["day"].Value;
+                            string year = dateMatch.Groups["year"].Value;
+
+                            if (DateTime.TryParse($"{month} {day}, {year}", out var parsedDate))
+                            {
+                                eventDate = parsedDate;
+                            }
+                        }
+                    }
+                }
 
                 // Avoid duplicate veterans
                 if (_context.Veterans.Any(v => v.Email == record.Email && v.Event.EventDate.Date == eventDate.Date))
@@ -72,6 +102,8 @@ namespace VeteranAnalyticsSystem.Services
                     await _context.SaveChangesAsync();
                 }
 
+                TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
+
                 var veteran = new Veteran
                 {
                     VeteranId = Guid.NewGuid().ToString(),
@@ -80,14 +112,14 @@ namespace VeteranAnalyticsSystem.Services
                     Email = record.Email,
                     PhoneNumber = record.PhoneNumber ?? "",
                     Gender = record.Gender ?? "Unknown",
-                    StartOfService = record.StartOfService == default ? DateTime.Now : record.StartOfService,
-                    EndOfService = record.EndOfService == default ? DateTime.Now : record.EndOfService,
-                    DateOfBirth = record.DateOfBirth == default ? DateTime.Now : record.DateOfBirth,
+                    StartOfService = DateTime.ParseExact(record.StartOfService, "yyyy/mm/dd", null),
+                    EndOfService = DateTime.ParseExact(record.EndOfService, "yyyy/mm/dd", null),
+                    DateOfBirth = DateTime.ParseExact(record.DateOfBirth, "yyyy/mm/dd", null),
                     BranchOfService = record.BranchOfService ?? "Unknown",
                     HealthConcerns = RemoveParenthesesContent(record.HealthConcerns ?? "None"),
                     AdditionalHealthInfo = record.AdditionalHealthInfo ?? "None",
                     HomeAddress = record.HomeAddress ?? "Unknown",
-                    City = record.City ?? "Unknown",
+                    City = textInfo.ToTitleCase(record.City.ToLower()) ?? "Unknown",
                     State = NormalizeState(record.State ?? "Unknown"),
                     RelationshipStatus = record.RelationshipStatus ?? "Unknown",
                     MilitaryServiceStatus = record.MilitaryServiceStatus ?? "Unknown",
@@ -126,11 +158,106 @@ namespace VeteranAnalyticsSystem.Services
         {
             var stateMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
+                ["alabama"] = "AL",
+                ["al"] = "AL",
+                ["alaska"] = "AK",
+                ["ak"] = "AK",
+                ["arizona"] = "AZ",
+                ["az"] = "AZ",
+                ["arkansas"] = "AR",
+                ["ar"] = "AR",
+                ["california"] = "CA",
+                ["ca"] = "CA",
+                ["colorado"] = "CO",
+                ["co"] = "CO",
+                ["connecticut"] = "CT",
+                ["ct"] = "CT",
+                ["delaware"] = "DE",
+                ["de"] = "DE",
                 ["florida"] = "FL",
                 ["fl"] = "FL",
                 ["georgia"] = "GA",
-                ["ga"] = "GA"
-                // Add more states as needed
+                ["ga"] = "GA",
+                ["hawaii"] = "HI",
+                ["hi"] = "HI",
+                ["idaho"] = "ID",
+                ["id"] = "ID",
+                ["illinois"] = "IL",
+                ["il"] = "IL",
+                ["indiana"] = "IN",
+                ["in"] = "IN",
+                ["iowa"] = "IA",
+                ["ia"] = "IA",
+                ["kansas"] = "KS",
+                ["ks"] = "KS",
+                ["kentucky"] = "KY",
+                ["ky"] = "KY",
+                ["louisiana"] = "LA",
+                ["la"] = "LA",
+                ["maine"] = "ME",
+                ["me"] = "ME",
+                ["maryland"] = "MD",
+                ["md"] = "MD",
+                ["massachusetts"] = "MA",
+                ["ma"] = "MA",
+                ["michigan"] = "MI",
+                ["mi"] = "MI",
+                ["minnesota"] = "MN",
+                ["mn"] = "MN",
+                ["mississippi"] = "MS",
+                ["ms"] = "MS",
+                ["missouri"] = "MO",
+                ["mo"] = "MO",
+                ["montana"] = "MT",
+                ["mt"] = "MT",
+                ["nebraska"] = "NE",
+                ["ne"] = "NE",
+                ["nevada"] = "NV",
+                ["nv"] = "NV",
+                ["new hampshire"] = "NH",
+                ["nh"] = "NH",
+                ["new jersey"] = "NJ",
+                ["nj"] = "NJ",
+                ["new mexico"] = "NM",
+                ["nm"] = "NM",
+                ["new york"] = "NY",
+                ["ny"] = "NY",
+                ["north carolina"] = "NC",
+                ["nc"] = "NC",
+                ["north dakota"] = "ND",
+                ["nd"] = "ND",
+                ["ohio"] = "OH",
+                ["oh"] = "OH",
+                ["oklahoma"] = "OK",
+                ["ok"] = "OK",
+                ["oregon"] = "OR",
+                ["or"] = "OR",
+                ["pennsylvania"] = "PA",
+                ["pa"] = "PA",
+                ["rhode island"] = "RI",
+                ["ri"] = "RI",
+                ["south carolina"] = "SC",
+                ["sc"] = "SC",
+                ["south dakota"] = "SD",
+                ["sd"] = "SD",
+                ["tennessee"] = "TN",
+                ["tn"] = "TN",
+                ["texas"] = "TX",
+                ["tx"] = "TX",
+                ["utah"] = "UT",
+                ["ut"] = "UT",
+                ["vermont"] = "VT",
+                ["vt"] = "VT",
+                ["virginia"] = "VA",
+                ["va"] = "VA",
+                ["washington"] = "WA",
+                ["wa"] = "WA",
+                ["west virginia"] = "WV",
+                ["wv"] = "WV",
+                ["wisconsin"] = "WI",
+                ["wi"] = "WI",
+                ["wyoming"] = "WY",
+                ["wy"] = "WY"
             };
             return stateMap.TryGetValue(input.Trim(), out var abbr) ? abbr : input.ToUpperInvariant();
         }
@@ -142,29 +269,68 @@ namespace VeteranAnalyticsSystem.Services
 
         private class RagicVeteranDto
         {
+            [JsonPropertyName("Veteran First Name:")]
             public string FirstName { get; set; }
+
+            [JsonPropertyName("Veteran Last Name:")]
             public string LastName { get; set; }
+
             [JsonPropertyName("Veteran E-mail Address")]
             public string Email { get; set; }
+
+            [JsonPropertyName("Veteran Cell Phone")]
             public string PhoneNumber { get; set; }
+
+            [JsonPropertyName("Veteran Gender:")]
             public string Gender { get; set; }
-            public DateTime StartOfService { get; set; }
-            public DateTime EndOfService { get; set; }
-            public DateTime DateOfBirth { get; set; }
+
+            [JsonPropertyName("Approximate Start of Veterans Military Service")]
+            public string StartOfService { get; set; }
+
+            [JsonPropertyName("Approximate End of Veterans Military Service")]
+            public string EndOfService { get; set; }
+
+            [JsonPropertyName("Veteran Date of Birth")]
+            public string DateOfBirth { get; set; }
+
+            [JsonPropertyName("Branch of Service")]
             public string BranchOfService { get; set; }
+
+            [JsonPropertyName("Please select any of the following health concerns that you")]
             public string HealthConcerns { get; set; }
+
+            [JsonPropertyName("Please provide any additional information about the health concerns you described above:")]
             public string AdditionalHealthInfo { get; set; }
+
+            [JsonPropertyName("Home Address")]
             public string HomeAddress { get; set; }
+
+            [JsonPropertyName("City")]
             public string City { get; set; }
+
+            [JsonPropertyName("State")]
             public string State { get; set; }
+
+            [JsonPropertyName("What is your current relationship status?")]
             public string RelationshipStatus { get; set; }
+
+            [JsonPropertyName("Please indicate your current military service status:")]
             public string MilitaryServiceStatus { get; set; }
+
+            [JsonPropertyName("Highest military rank (current or at discharge/retirement):")]
             public string HighestRank { get; set; }
+
+            [JsonPropertyName("Briefly describe your Combat Zone Deployments or Stateside Missions: Please include dates of deployment")]
             public string DeploymentDetails { get; set; }
+
+            [JsonPropertyName("Please describe any physical limitations you have and any assistance/accommodations you will need during the retreat (e.g.")]
             public string PhysicalLimitations { get; set; }
-            public int NumberOfDeployments { get; set; }
-            public string EventLocation { get; set; }
-            public DateTime EventDate { get; set; }
+
+            [JsonPropertyName("Number of Combat Zone Deployments")]
+            public string NumberOfDeployments { get; set; }
+
+            [JsonPropertyName("Which retreat date/location are you applying for?")]
+            public string EventLocationDate { get; set; } // keep this single string
         }
     }
 }

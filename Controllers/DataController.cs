@@ -14,7 +14,7 @@ namespace VeteranAnalyticsSystem.Controllers
     public class DataController : Controller
     {
         private readonly RagicImporterService _ragicImporterService;
-        //private readonly GoogleFormsImporterService _googleFormsImporterService;
+        private readonly GoogleFormsImporterService _googleFormsImporterService;
         private readonly GratitudeAmericaDbContext _context;
         private readonly FileImporterService _fileImporterService;
         private readonly IConfiguration _configuration;
@@ -203,12 +203,28 @@ namespace VeteranAnalyticsSystem.Controllers
 
 
 
-        //[HttpPost]
-        //public IActionResult SyncGoogleFormsDatabase()
-        //{
-        //    TempData["LastGoogleSyncTime"] = DateTime.Now.ToString("f");
-        //    return Json(new { success = true, message = "Google Forms Database synced successfully.", lastSync = TempData["LastGoogleSyncTime"] });
-        //}
+        [HttpPost]
+        public async Task<IActionResult> ImportFromGoogleForms()
+        {
+            try
+            {
+                var imported = await _googleFormsImporterService.ImportSurveysFromGoogleFormsAsync();
+
+                return Json(new
+                {
+                    message = $"{imported.Count} surveys imported from Google Forms.",
+                    lastSync = DateTime.UtcNow.ToString("g")
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    message = $"Google Forms import failed: {ex.Message}",
+                    lastSync = "N/A"
+                });
+            }
+        }
 
         //[HttpGet]
         //public IActionResult GetLastSyncTimes()
