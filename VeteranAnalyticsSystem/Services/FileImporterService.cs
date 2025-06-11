@@ -215,7 +215,7 @@ namespace VeteranAnalyticsSystem.Services
                         HealthConcerns = RemoveParenthesesContent(reader.GetValue(header.IndexOf("Please select any of the following health concerns that you"))?.ToString() ?? "None"),
                         AdditionalHealthInfo = reader.GetValue(header.IndexOf("Please provide any additional information about the health concerns you described above:"))?.ToString() ?? "None",
                         PhysicalLimitations = reader.GetValue(header.IndexOf("Please describe any physical limitations you have and any assistance/accommodations you will need during the retreat (e.g."))?.ToString() ?? "None",
-                        NumberOfDeployments = int.TryParse(reader.GetValue(header.IndexOf("Number of Combat Zone Deployments"))?.ToString(), out var numDeps) ? numDeps : 0,
+                        //NumberOfDeployments = int.TryParse(reader.GetValue(header.IndexOf("Number of Combat Zone Deployments"))?.ToString(), out var numDeps) ? numDeps : 0,
                         EventId = evt.EventId
                     };
 
