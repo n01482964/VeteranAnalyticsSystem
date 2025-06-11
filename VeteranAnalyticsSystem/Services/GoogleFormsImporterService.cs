@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using VeteranAnalyticsSystem.Data;
 using VeteranAnalyticsSystem.Models;
 using Microsoft.EntityFrameworkCore;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Forms.v1;
+using Google.Apis.Services;
 
 namespace VeteranAnalyticsSystem.Services
 {
@@ -14,14 +17,25 @@ namespace VeteranAnalyticsSystem.Services
     {
         private readonly GratitudeAmericaDbContext _context;
         private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
 
-        private const string PreFormId = "YOUR_PRE_FORM_ID";
-        private const string PostFormId = "YOUR_POST_FORM_ID";
+        private readonly string PreFormId;
+        private readonly string PostFormId;
 
-        public GoogleFormsImporterService(GratitudeAmericaDbContext context, HttpClient httpClient)
+        public GoogleFormsImporterService(GratitudeAmericaDbContext context, HttpClient httpClient, IConfiguration configuration)
         {
             _context = context;
             _httpClient = httpClient;
+            _configuration = configuration;
+
+            PreFormId = configuration.GetValue<string>("PreFormId");
+
+            PostFormId = configuration.GetValue<string>("PostFormId");
+
+
+            if (string.IsNullOrWhiteSpace(PreFormId) || string.IsNullOrWhiteSpace(PostFormId))
+                throw new Exception("Error: Pre or Post Form ID is null");
+
         }
 
         public async Task<List<Survey>> ImportSurveysFromGoogleFormsAsync()
@@ -33,58 +47,82 @@ namespace VeteranAnalyticsSystem.Services
 
         private async Task<List<Survey>> ImportFromFormAsync(string formId, SurveyType surveyType)
         {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer");
-
-            var response = await _httpClient.GetAsync($"https://forms.googleapis.com/v1/forms/{formId}/responses");
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"Failed to fetch responses from form {formId}. Status: {response.StatusCode}");
-
-            var json = await response.Content.ReadAsStringAsync();
-            var parsed = JsonDocument.Parse(json);
-
-            var surveys = new List<Survey>();
-
-            if (!parsed.RootElement.TryGetProperty("responses", out var responseArray))
-                return surveys;
-
-            foreach (var item in responseArray.EnumerateArray())
+            GoogleCredential credential;
+            using (var stream = new FileStream("service-account.json", FileMode.Open, FileAccess.Read))
             {
-                var dto = new GoogleFormsSurveyDto
-                {
-                    ResponseId = item.GetProperty("responseId").GetString(),
-                    CreateTime = item.GetProperty("createTime").GetDateTime(),
-                    RespondentEmail = item.GetProperty("respondentEmail").GetString()
-                };
-
-                if (item.TryGetProperty("answers", out var answers))
-                {
-                    foreach (var ans in answers.EnumerateObject())
-                    {
-                        var questionId = ans.Name;
-                        var label = QuestionMap.GetValueOrDefault(questionId, questionId);
-                        var value = ans.Value.GetProperty("textAnswers").GetProperty("answers")[0].GetProperty("value").GetString();
-                        dto.Answers[label] = value;
-                    }
-                }
-
-                if (string.IsNullOrWhiteSpace(dto.RespondentEmail))
-                    continue;
-
-                var survey = new Survey
-                {
-                    Email = dto.RespondentEmail,
-                    SubmissionDate = dto.CreateTime,
-                    SurveyType = surveyType,
-                    Responses = dto.Answers
-                };
-
-                _context.Surveys.Add(survey);
-                surveys.Add(survey);
+                credential = GoogleCredential.FromStream(stream)
+                    .CreateScoped(FormsService.Scope.FormsBodyReadonly); // or FormsBody for write access
             }
 
-            await _context.SaveChangesAsync();
-            return surveys;
+            // Create the Forms API service
+            var service = new FormsService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "Google Forms API with Service Account",
+            });
+
+            // Example: Get a form by ID
+            var request = service.Forms.Get(formId);
+            var form = await request.ExecuteAsync();
+
+            Console.WriteLine($"Form Title: {form.Info.Title}");
+
+            return new List<Survey>();
+
+            //_httpClient.DefaultRequestHeaders.Authorization =
+            //    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            //var response = await _httpClient.GetAsync($"https://forms.googleapis.com/v1/forms/{formId}/responses");
+            //if (!response.IsSuccessStatusCode)
+            //    throw new Exception($"Failed to fetch responses from form {formId}. Status: {response.StatusCode}");
+
+            //var json = await response.Content.ReadAsStringAsync();
+            //var parsed = JsonDocument.Parse(json);
+
+            //var surveys = new List<Survey>();
+
+            //if (!parsed.RootElement.TryGetProperty("responses", out var responseArray))
+            //    return surveys;
+
+            //foreach (var item in responseArray.EnumerateArray())
+            //{
+            //    var dto = new GoogleFormsSurveyDto
+            //    {
+            //        ResponseId = item.GetProperty("responseId").GetString(),
+            //        CreateTime = item.GetProperty("createTime").GetDateTime(),
+            //        RespondentEmail = item.GetProperty("respondentEmail").GetString()
+            //    };
+
+            //    if (item.TryGetProperty("answers", out var answers))
+            //    {
+            //        foreach (var ans in answers.EnumerateObject())
+            //        {
+            //            var questionId = ans.Name;
+            //            var label = QuestionMap.GetValueOrDefault(questionId, questionId);
+            //            var value = ans.Value.GetProperty("textAnswers").GetProperty("answers")[0].GetProperty("value").GetString();
+            //            dto.Answers[label] = value;
+            //        }
+            //    }
+
+            //    if (string.IsNullOrWhiteSpace(dto.RespondentEmail))
+            //        continue;
+
+            //    var survey = new Survey
+            //    {
+            //        Email = dto.RespondentEmail,
+            //        SubmissionDate = dto.CreateTime,
+            //        SurveyType = surveyType,
+            //        Responses = dto.Answers
+            //    };
+
+            //    _context.Surveys.Add(survey);
+            //    surveys.Add(survey);
+            //}
+
+            //await _context.SaveChangesAsync();
+            //return surveys;
+
+
         }
 
         // Inline DTO

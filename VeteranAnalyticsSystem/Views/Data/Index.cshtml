@@ -63,7 +63,7 @@
             });
 
             $('#syncGoogle').click(function () {
-                $.post('@Url.Action("ImportFromGoogleForms", "Survey")', function (data) {
+                $.post('@Url.Action("ImportFromGoogleForms", "Data")', function (data) {
                     $('#syncStatus').removeClass('d-none').text(data.message);
                     $('#googleSyncTime').text('Last Google Sync: ' + data.lastSync);
                 });

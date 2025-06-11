@@ -20,12 +20,12 @@ namespace VeteranAnalyticsSystem.Controllers
         private readonly IConfiguration _configuration;
 
         public DataController(GratitudeAmericaDbContext context, IConfiguration configuration,
-        RagicImporterService ragicImporterService)
+        RagicImporterService ragicImporterService, GoogleFormsImporterService googleFormsImporterService)
         {
             _context = context;
             _fileImporterService = new FileImporterService(context);
             _ragicImporterService = ragicImporterService;
-            //_googleFormsImporterService = googleFormsImporterService;
+            _googleFormsImporterService = googleFormsImporterService;
 
             _configuration = configuration;
         }
