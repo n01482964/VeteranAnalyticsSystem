@@ -51,7 +51,7 @@ namespace VeteranAnalyticsSystem.Models
 
         public required string BranchOfService { get; set; }
 
-        public int NumberOfDeployments { get; set; }
+        public string NumberOfDeployments { get; set; }
 
         [Required]
         public required string DeploymentDetails { get; set; }

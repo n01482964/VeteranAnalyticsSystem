@@ -1,4 +1,4 @@
-﻿@{
+﻿﻿@{
     ViewData["Title"] = "Data Import";
 }
 
@@ -39,13 +39,14 @@
     </div>
 
 
-    <form method="post" action="/data/import"> 
-        <button> Ragic Import Real</button> 
+    <form method="post" action="/data/import">
+        <button> Ragic Import Real</button>
         <input name="fileType" value="VeteranData" />
     </form>
 </div>
 
 @section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
         $(document).ready(function () {
             // Load last sync times
@@ -62,11 +63,12 @@
             });
 
             $('#syncGoogle').click(function () {
-                $.post('@Url.Action("SyncGoogleFormsDatabase", "Data")', function (data) {
+                $.post('@Url.Action("ImportFromGoogleForms", "Survey")', function (data) {
                     $('#syncStatus').removeClass('d-none').text(data.message);
                     $('#googleSyncTime').text('Last Google Sync: ' + data.lastSync);
                 });
             });
+
 
             $('#deleteAllSurveysBtn').click(function () {
                 if (confirm("Delete ALL surveys?")) {
