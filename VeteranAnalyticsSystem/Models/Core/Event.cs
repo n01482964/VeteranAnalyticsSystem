@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace VeteranAnalyticsSystem.Models
+namespace VeteranAnalyticsSystem.Models.Core
 {
     public class Event
     {

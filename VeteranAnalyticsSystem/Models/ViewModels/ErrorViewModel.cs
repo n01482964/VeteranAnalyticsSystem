@@ -1,4 +1,4 @@
-namespace VeteranAnalyticsSystem.Models
+namespace VeteranAnalyticsSystem.Models.ViewModels
 {
     public class ErrorViewModel
     {

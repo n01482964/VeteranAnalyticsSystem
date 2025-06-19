@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 
-namespace VeteranAnalyticsSystem.Models
+namespace VeteranAnalyticsSystem.Models.Core
 {
     public class ApplicationUser : IdentityUser
     {

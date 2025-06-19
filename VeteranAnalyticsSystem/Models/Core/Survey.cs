@@ -1,4 +1,4 @@
-﻿namespace VeteranAnalyticsSystem.Models;
+﻿namespace VeteranAnalyticsSystem.Models.Core;
 
 public enum SurveyType
 {

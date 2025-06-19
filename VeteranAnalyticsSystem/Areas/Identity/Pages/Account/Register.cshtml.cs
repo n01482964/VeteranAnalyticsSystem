@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using System.Text.Encodings.Web;
-using VeteranAnalyticsSystem.Models;
 using Microsoft.AspNetCore.WebUtilities;
+using VeteranAnalyticsSystem.Models.Core;
 
 namespace VeteranAnalyticsSystem.Areas.Identity.Pages.Account
 {

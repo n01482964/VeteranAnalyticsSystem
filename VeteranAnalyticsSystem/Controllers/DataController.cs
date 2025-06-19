@@ -3,6 +3,8 @@ using VeteranAnalyticsSystem.Data;
 using VeteranAnalyticsSystem.Services;
 using Microsoft.EntityFrameworkCore;
 using VeteranAnalyticsSystem.Contracts;
+using VeteranAnalyticsSystem.Models.ViewModels;
+using VeteranAnalyticsSystem.Models.Enums;
 
 namespace VeteranAnalyticsSystem.Controllers;
 
@@ -14,9 +16,26 @@ public class DataController(
     [HttpGet]
     public IActionResult Index()
     {
-        ViewBag.TotalVeterans = context.Veterans.Count();
-        ViewBag.TotalEvents = context.Events.Count();
-        return View();
+        var lastGoogleFormsSync = context.SyncRecords
+                .Where(s => s.SyncType == SyncTypes.GoogleForms)
+                .OrderByDescending(s => s.TimeStamp)
+                .Select(s => s.TimeStamp)
+                .FirstOrDefault();
+        var lastRagicSync = context.SyncRecords
+                .Where(s => s.SyncType == SyncTypes.Ragic)
+                .OrderByDescending(s => s.TimeStamp)
+                .Select(s => s.TimeStamp)
+                .FirstOrDefault();
+
+        var model = new DataViewModel
+        {
+            LastGoogleFormsSync = lastGoogleFormsSync != default ? lastGoogleFormsSync : null,
+            LastRagicSync = lastRagicSync != default ? lastGoogleFormsSync : null,
+            TotalVeterans = context.Veterans.Count(),
+            TotalEvents = context.Events.Count()
+        };
+
+        return View(model);
     }
 
     [HttpPost]

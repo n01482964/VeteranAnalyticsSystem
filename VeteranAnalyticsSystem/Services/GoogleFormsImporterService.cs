@@ -1,5 +1,4 @@
 ﻿using VeteranAnalyticsSystem.Data;
-using VeteranAnalyticsSystem.Models;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4.Data;
@@ -8,6 +7,7 @@ using VeteranAnalyticsSystem.Extensions;
 using VeteranAnalyticsSystem.Contracts;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using VeteranAnalyticsSystem.Models.Core;
 
 namespace VeteranAnalyticsSystem.Services;
 
@@ -23,6 +23,14 @@ public class GoogleFormsImporterService(
     {
         var preSurveysCount = await ImportForm(SurveyType.PreRetreat);
         var postSurveysCount = await ImportForm(SurveyType.PostRetreat);
+
+        context.SyncRecords.Add(new SyncRecord
+        {
+            TimeStamp = DateTime.UtcNow,
+            SyncType = Models.Enums.SyncTypes.GoogleForms
+        });
+        await context.SaveChangesAsync();
+
         return preSurveysCount + postSurveysCount;
     }
 

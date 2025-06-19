@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using VeteranAnalyticsSystem.Data;
-using VeteranAnalyticsSystem.Models;
+using VeteranAnalyticsSystem.Models.Core;
 
 namespace VeteranAnalyticsSystem.Controllers
 {

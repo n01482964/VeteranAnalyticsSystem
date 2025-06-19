@@ -1,4 +1,6 @@
-﻿namespace VeteranAnalyticsSystem.Models
+﻿using VeteranAnalyticsSystem.Models.Core;
+
+namespace VeteranAnalyticsSystem.Models.ViewModels
 {
     public class EventDetailsViewModel
     {

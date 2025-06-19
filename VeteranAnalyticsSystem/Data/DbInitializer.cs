@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using VeteranAnalyticsSystem.Models;
+using VeteranAnalyticsSystem.Models.Core;
 
 namespace VeteranAnalyticsSystem.Data;
 

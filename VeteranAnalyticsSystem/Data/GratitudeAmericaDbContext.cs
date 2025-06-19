@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using VeteranAnalyticsSystem.Models;
+using VeteranAnalyticsSystem.Models.Core;
 
 namespace VeteranAnalyticsSystem.Data;
 
@@ -13,6 +13,8 @@ public class GratitudeAmericaDbContext(DbContextOptions<GratitudeAmericaDbContex
     public DbSet<Veteran> Veterans { get; set; } = default!;
 
     public DbSet<Survey> Surveys { get; set; } = default!;
+
+    public DbSet<SyncRecord> SyncRecords { get; set; } = default!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

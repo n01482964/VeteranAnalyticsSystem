@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using VeteranAnalyticsSystem.Data;
 using VeteranAnalyticsSystem.Models;
 using System.Collections.Generic;
+using VeteranAnalyticsSystem.Models.Core;
+using VeteranAnalyticsSystem.Models.ViewModels;
 
 namespace VeteranAnalyticsSystem.Controllers
 {

@@ -73,5 +73,6 @@
     <Build Include="dbo\Tables\Surveys.sql" />
     <Build Include="dbo\Tables\Veterans.sql" />
     <Build Include="dbo\Tables\Volunteers.sql" />
+    <Build Include="dbo\Tables\SyncRecords.sql" />
   </ItemGroup>
 </Project>

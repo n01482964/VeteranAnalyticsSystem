@@ -1,4 +1,6 @@
-﻿﻿@{
+﻿@model VeteranAnalyticsSystem.Models.ViewModels.DataViewModel
+
+﻿@{
     ViewData["Title"] = "Data Import";
 }
 
@@ -17,7 +19,7 @@
             <form id="google-form" action="/Data/ImportFromGoogleForms" method="post">
                 <button id="google-button" class="btn btn-info btn-lg mb-2">Google Forms Database Sync</button>
             </form>
-            <div id="googleSyncTime" class="text-muted">Last Google Sync: Never</div>
+            <div class="text-muted">Last Google Sync: @Model.DisplayLastGoogleFormsSync</div>
         </div>
     </div>
 

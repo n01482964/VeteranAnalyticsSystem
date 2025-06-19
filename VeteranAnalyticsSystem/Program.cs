@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using VeteranAnalyticsSystem.Contracts;
 using VeteranAnalyticsSystem.Core.Options;
 using VeteranAnalyticsSystem.Data;
-using VeteranAnalyticsSystem.Models;
+using VeteranAnalyticsSystem.Models.Core;
 using VeteranAnalyticsSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
