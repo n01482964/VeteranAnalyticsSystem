@@ -15,7 +15,7 @@
 }
 
 <div class="container mt-4">
-    <h1 class="mb-4">Survey Details (ID: @Model.SurveyId)</h1>
+    <h1 class="mb-4">Survey Details (ID: @Model.Id)</h1>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -25,13 +25,13 @@
             <p class="card-text">
                 <!-- Removed Email Field -->
                 <strong>Survey Type:</strong> @Model.SurveyType <br />
-                <strong>Submission Date:</strong> @Model.SubmissionDate.ToShortDateString()
+                <strong>Submission Date:</strong> @Model.DisplaySubmissionDate
             </p>
         </div>
     </div>
 
     <h3>Survey Responses</h3>
-    @if (Model.Responses != null && Model.Responses.Any())
+    @* @if (Model.Responses != null && Model.Responses.Any())
     {
         <table class="table table-striped table-bordered">
             <thead class="thead-dark">
@@ -58,5 +58,5 @@
     else
     {
         <p>No responses available for this survey.</p>
-    }
+    } *@
 </div>

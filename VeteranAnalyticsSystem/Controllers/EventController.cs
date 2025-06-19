@@ -61,9 +61,7 @@ namespace VeteranAnalyticsSystem.Controllers
             var postRetreatDate = eventStart.AddDays(2);
 
             var surveys = await _context.Surveys
-                .Where(s => veteranEmails.Contains(s.Email)
-                    && s.SurveyType == SurveyType.PostRetreat
-                    && s.SubmissionDate.Date == postRetreatDate.Date)
+                .Where(s => s.EventId == id)
                 .ToListAsync();
 
             var viewModel = new EventDetailsViewModel

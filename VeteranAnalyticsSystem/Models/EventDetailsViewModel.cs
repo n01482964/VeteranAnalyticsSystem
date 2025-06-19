@@ -6,6 +6,4 @@
         public List<Veteran> Veterans { get; set; } = new();
         public List<Survey> MatchedSurveys { get; set; } = new();
     }
-
-
 }

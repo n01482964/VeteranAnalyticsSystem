@@ -16,14 +16,14 @@ namespace VeteranAnalyticsSystem.Controllers
         private readonly RagicImporterService _ragicImporterService;
         private readonly GoogleFormsImporterService _googleFormsImporterService;
         private readonly GratitudeAmericaDbContext _context;
-        private readonly FileImporterService _fileImporterService;
+        //private readonly FileImporterService _fileImporterService;
         private readonly IConfiguration _configuration;
 
         public DataController(GratitudeAmericaDbContext context, IConfiguration configuration,
         RagicImporterService ragicImporterService, GoogleFormsImporterService googleFormsImporterService)
         {
             _context = context;
-            _fileImporterService = new FileImporterService(context);
+            //_fileImporterService = new FileImporterService(context);
             _ragicImporterService = ragicImporterService;
             _googleFormsImporterService = googleFormsImporterService;
 
@@ -226,15 +226,6 @@ namespace VeteranAnalyticsSystem.Controllers
             }
         }
 
-        //[HttpGet]
-        //public IActionResult GetLastSyncTimes()
-        //{
-        //    var ragicSync = TempData["LastRagicSyncTime"] ?? "Never";
-        //    var googleSync = TempData["LastGoogleSyncTime"] ?? "Never";
-
-        //    return Json(new { ragic = ragicSync, google = googleSync });
-        //}
-
         [HttpPost]
         public async Task<IActionResult> ClearAzureDatabase()
         {
@@ -267,6 +258,5 @@ namespace VeteranAnalyticsSystem.Controllers
                 });
             }
         }
-
     }
 }
