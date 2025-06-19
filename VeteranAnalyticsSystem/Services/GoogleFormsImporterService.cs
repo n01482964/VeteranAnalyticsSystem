@@ -4,33 +4,21 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4.Data;
 using Google.Apis.Sheets.v4;
+using VeteranAnalyticsSystem.Extensions;
+using Azure.Storage.Blobs;
+using Azure.Identity;
+using VeteranAnalyticsSystem.Contracts;
 
 namespace VeteranAnalyticsSystem.Services;
 
-public class GoogleFormsImporterService
+public class GoogleFormsImporterService(
+    GratitudeAmericaDbContext context,
+    HttpClient httpClient,
+    IConfiguration configuration,
+    IGoogleFormCredentialService googleFormCredentialService)
 {
-    private readonly GratitudeAmericaDbContext _context;
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
-
-    private readonly string PreFormId;
-    private readonly string PostFormId;
-
-    public GoogleFormsImporterService(GratitudeAmericaDbContext context, HttpClient httpClient, IConfiguration configuration)
-    {
-        _context = context;
-        _httpClient = httpClient;
-        _configuration = configuration;
-
-        PreFormId = configuration.GetValue<string>("PreFormId");
-        PostFormId = configuration.GetValue<string>("PostFormId");
-
-        if (string.IsNullOrWhiteSpace(PreFormId)
-            || string.IsNullOrWhiteSpace(PostFormId)
-            )
-            throw new Exception("Error: Pre or Post Form ID is null");
-
-    }
+    private readonly string PreFormId = configuration.GetRequiredValue<string>("PreFormId");
+    private readonly string PostFormId = configuration.GetRequiredValue<string>("PostFormId");
 
     public async Task<List<Survey>> ImportSurveysFromGoogleFormsAsync()
     {
@@ -98,37 +86,34 @@ public class GoogleFormsImporterService
 
         //await _context.SaveChangesAsync();
         //return surveys;
-
-
     }
 
     private async Task Temp()
     {
+        var credentials = await googleFormCredentialService.DownloadCredentials();
+
         string[] Scopes = { SheetsService.Scope.SpreadsheetsReadonly };
-        string ApplicationName = "Veteran Analytics System";
         string Range = "Form Responses 1!A1:N"; // 1!A1:R for postreat
 
-        GoogleCredential credential;
-        using (var stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
-        {
-            credential = GoogleCredential.FromStream(stream).CreateScoped(Scopes);
-        }
+        using var stream = new MemoryStream(credentials);
+        var credential = GoogleCredential.FromStream(stream).CreateScoped(Scopes);
 
         var service = new SheetsService(new BaseClientService.Initializer()
         {
             HttpClientInitializer = credential,
-            ApplicationName = ApplicationName,
+            ApplicationName = "Veteran Analytics System"
         });
 
         SpreadsheetsResource.ValuesResource.GetRequest request =
-        service.Spreadsheets.Values.Get(PreFormId, Range);
+            service.Spreadsheets.Values.Get(PreFormId, Range);
 
         ValueRange response = await request.ExecuteAsync();
         var values = response.Values;
 
-        if (values != null && values.Count > 0)
+        if (values != null && values.Count > 1)
         {
-            foreach (var row in values)
+            // Skip the first row (titles)
+            foreach (var row in values.Skip(1))
             {
                 Console.WriteLine(string.Join(", ", row));
             }
@@ -137,7 +122,6 @@ public class GoogleFormsImporterService
         {
             Console.WriteLine("No data found.");
         }
-
     }
 
     // Inline DTO
