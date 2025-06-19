@@ -14,7 +14,9 @@
             <div id="ragicSyncTime" class="text-muted">Last Ragic Sync: Never</div>
         </div>
         <div class="col-md-6 text-center">
-            <button id="syncGoogle" class="btn btn-info btn-lg mb-2">Google Forms Database Sync</button>
+            <form id="google-form" action="/Data/ImportFromGoogleForms" method="post">
+                <button id="google-button" class="btn btn-info btn-lg mb-2">Google Forms Database Sync</button>
+            </form>
             <div id="googleSyncTime" class="text-muted">Last Google Sync: Never</div>
         </div>
     </div>
@@ -37,12 +39,6 @@
         <button id="clearAzureDb" class="btn btn-danger mb-2">Clear Azure SQL Veterans</button>
         <div id="azureClearStatus" class="text-muted">Last Cleared: Never</div>
     </div>
-
-
-    <form method="post" action="/data/import">
-        <button> Ragic Import Real</button>
-        <input name="fileType" value="VeteranData" />
-    </form>
 </div>
 
 @section Scripts {
@@ -61,14 +57,6 @@
                     $('#ragicSyncTime').text('Last Ragic Sync: ' + data.lastSync);
                 });
             });
-
-            $('#syncGoogle').click(function () {
-                $.post('@Url.Action("ImportFromGoogleForms", "Data")', function (data) {
-                    $('#syncStatus').removeClass('d-none').text(data.message);
-                    $('#googleSyncTime').text('Last Google Sync: ' + data.lastSync);
-                });
-            });
-
 
             $('#deleteAllSurveysBtn').click(function () {
                 if (confirm("Delete ALL surveys?")) {
@@ -103,4 +91,5 @@
 
         });
     </script>
+    <script src="~/js/data.js" asp-append-version="true"></script>
 }

@@ -46,7 +46,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Register");
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/AccessDenied");
     options.Conventions.AllowAnonymousToAreaFolder("Identity", "/Account");
-});
+}).AddRazorRuntimeCompilation();
 
 // Configure redirect paths for login/access denied (optional but recommended)
 builder.Services.ConfigureApplicationCookie(options =>
@@ -60,6 +60,7 @@ builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.Configure<AuthMessageSenderOptions>(builder.Configuration);
 
 builder.Services.AddScoped<IGoogleFormCredentialService, GoogleFormCredentialService>();
+builder.Services.AddScoped<IGoogleFormsImporterService, GoogleFormsImporterService>();
 
 // Build the app
 var app = builder.Build();

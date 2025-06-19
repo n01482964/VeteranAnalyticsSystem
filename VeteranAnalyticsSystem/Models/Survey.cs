@@ -30,6 +30,14 @@ public class Survey
 
     public string? Rating { get; set; }
 
+    public string? ExperienceRating { get; set; }
+
+    public string? LifeImpact { get; set; }
+
+    public string? Recommendation { get; set; }
+
+    public string? Feedback { get; set; }
+
     public required string ResponsesJson { get; set; }
 
     public string DisplaySubmissionDate => SubmissionDate?.ToShortDateString() ?? "N/A";

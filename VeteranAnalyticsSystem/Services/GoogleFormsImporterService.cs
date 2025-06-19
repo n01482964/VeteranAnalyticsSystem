@@ -14,15 +14,15 @@ namespace VeteranAnalyticsSystem.Services;
 public class GoogleFormsImporterService(
     GratitudeAmericaDbContext context,
     IConfiguration configuration,
-    IGoogleFormCredentialService googleFormCredentialService)
+    IGoogleFormCredentialService googleFormCredentialService) : IGoogleFormsImporterService
 {
     private readonly string PreFormId = configuration.GetRequiredValue<string>("PreFormId");
     private readonly string PostFormId = configuration.GetRequiredValue<string>("PostFormId");
 
-    public async Task<int> ImportSurveysFromGoogleFormsAsync()
+    public async Task<int> ImportForms()
     {
         var preSurveysCount = await ImportForm(SurveyType.PreRetreat);
-        var postSurveysCount = await ImportForm(SurveyType.PreRetreat);
+        var postSurveysCount = await ImportForm(SurveyType.PostRetreat);
         return preSurveysCount + postSurveysCount;
     }
 
@@ -55,8 +55,10 @@ public class GoogleFormsImporterService(
 
             if (values != null && values.Count > 1)
             {
-                foreach (var row in values.Skip(1))
+                foreach (var row in values)
                 {
+                    Console.WriteLine(string.Join(",", row));
+
                     switch (surveyType)
                     {
                         case SurveyType.PreRetreat:
@@ -93,7 +95,7 @@ public class GoogleFormsImporterService(
         return 0;
     }
 
-    private Survey HandlePreRetreat(IList<object> row)
+    private static Survey HandlePreRetreat(IList<object> row)
     {
         var timeStamp = row[0].ToString();
         var email = row[1].ToString();
@@ -115,7 +117,7 @@ public class GoogleFormsImporterService(
         };
     }
 
-    private Survey HandlePostRetreat(IList<object> row)
+    private static Survey HandlePostRetreat(IList<object> row)
     {
         var timeStamp = row[0].ToString();
         var email = row[1].ToString();
@@ -133,6 +135,10 @@ public class GoogleFormsImporterService(
             PastStruggles = row.Count > 5 ? row[5].ToString() : null,
             ComfortZone = row.Count > 6 ? row[6].ToString() : null,
             Rating = row.Count > 7 ? row[7].ToString() : null,
+            ExperienceRating = row.Count > 8 ? row[8].ToString() : null,
+            LifeImpact = row.Count > 9 ? row[9].ToString() : null,
+            Recommendation = row.Count > 10 ? row[10].ToString() : null,
+            Feedback = row.Count > 11 ? row[11].ToString() : null,
             ResponsesJson = JsonSerializer.Serialize(row)
         };
     }
