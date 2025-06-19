@@ -33,7 +33,7 @@ public class GoogleFormsImporterService(
             var credentials = await googleFormCredentialService.DownloadCredentials();
 
             string[] scopes = { SheetsService.Scope.SpreadsheetsReadonly };
-            string range = "Form Responses 1!A1:N"; // 1!A1:R for postreat
+            string range = surveyType == SurveyType.PreRetreat ? "Form Responses 1!A1:N" : "Form Responses 1!A1:R";
 
             using var stream = new MemoryStream(credentials);
             var credential = GoogleCredential.FromStream(stream).CreateScoped(scopes);
@@ -57,24 +57,15 @@ public class GoogleFormsImporterService(
             {
                 foreach (var row in values.Skip(1))
                 {
-                    var timeStamp = row[0].ToString();
-                    var email = row[1].ToString();
-                    var identifier = row[2].ToString();
-                    DateTime? submissionDate = !string.IsNullOrWhiteSpace(timeStamp) ? DateTime.Parse(timeStamp) : null;
-
-                    surveys.Add(new Survey
+                    switch (surveyType)
                     {
-                        Email = email,
-                        SelfIdentifier = identifier,
-                        SubmissionDate = submissionDate,
-                        SurveyType = surveyType,
-                        EmotionalConnection = row.Count > 3 ? row[3].ToString() : null,
-                        ConflictResolution = row.Count > 4 ? row[4].ToString() : null,
-                        PastStruggles = row.Count > 5 ? row[5].ToString() : null,
-                        ComfortZone = row.Count > 6 ? row[6].ToString() : null,
-                        Rating = row.Count > 7 ? row[7].ToString() : null,
-                        ResponsesJson = JsonSerializer.Serialize(row)
-                    });
+                        case SurveyType.PreRetreat:
+                            surveys.Add(HandlePreRetreat(row));
+                            break;
+                        case SurveyType.PostRetreat:
+                            surveys.Add(HandlePostRetreat(row));
+                            break;
+                    }
                 }
             }
 
@@ -102,8 +93,47 @@ public class GoogleFormsImporterService(
         return 0;
     }
 
-    private void HandlePreRetreat()
+    private Survey HandlePreRetreat(IList<object> row)
     {
+        var timeStamp = row[0].ToString();
+        var email = row[1].ToString();
+        var identifier = row[2].ToString();
+        DateTime? submissionDate = !string.IsNullOrWhiteSpace(timeStamp) ? DateTime.Parse(timeStamp) : null;
 
+        return new Survey
+        {
+            Email = email,
+            SelfIdentifier = identifier,
+            SubmissionDate = submissionDate,
+            SurveyType = SurveyType.PreRetreat,
+            EmotionalConnection = row.Count > 3 ? row[3].ToString() : null,
+            ConflictResolution = row.Count > 4 ? row[4].ToString() : null,
+            PastStruggles = row.Count > 5 ? row[5].ToString() : null,
+            ComfortZone = row.Count > 6 ? row[6].ToString() : null,
+            Rating = row.Count > 7 ? row[7].ToString() : null,
+            ResponsesJson = JsonSerializer.Serialize(row)
+        };
+    }
+
+    private Survey HandlePostRetreat(IList<object> row)
+    {
+        var timeStamp = row[0].ToString();
+        var email = row[1].ToString();
+        var identifier = row[2].ToString();
+        DateTime? submissionDate = !string.IsNullOrWhiteSpace(timeStamp) ? DateTime.Parse(timeStamp) : null;
+
+        return new Survey
+        {
+            Email = email,
+            SelfIdentifier = identifier,
+            SubmissionDate = submissionDate,
+            SurveyType = SurveyType.PreRetreat,
+            EmotionalConnection = row.Count > 3 ? row[3].ToString() : null,
+            ConflictResolution = row.Count > 4 ? row[4].ToString() : null,
+            PastStruggles = row.Count > 5 ? row[5].ToString() : null,
+            ComfortZone = row.Count > 6 ? row[6].ToString() : null,
+            Rating = row.Count > 7 ? row[7].ToString() : null,
+            ResponsesJson = JsonSerializer.Serialize(row)
+        };
     }
 }
