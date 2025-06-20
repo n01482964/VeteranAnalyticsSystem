@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System.Linq;
-using VeteranAnalyticsSystem.Models;
 using Microsoft.EntityFrameworkCore;
+using VeteranAnalyticsSystem.Models.Core;
 
 namespace VeteranAnalyticsSystem.Controllers
 {

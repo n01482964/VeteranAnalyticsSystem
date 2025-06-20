@@ -4,11 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using VeteranAnalyticsSystem.Data;
-using VeteranAnalyticsSystem.Models;
 using VeteranAnalyticsSystem.Services;
 using CsvHelper;
 using System.Globalization;
 using System.Text;
+using VeteranAnalyticsSystem.Models.Core;
 
 
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace VeteranAnalyticsSystem.Models
+namespace VeteranAnalyticsSystem.Models.Core
 {
     public class Veteran
     {

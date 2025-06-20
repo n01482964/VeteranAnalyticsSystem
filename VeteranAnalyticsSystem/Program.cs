@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
+using VeteranAnalyticsSystem.Contracts;
 using VeteranAnalyticsSystem.Core.Options;
 using VeteranAnalyticsSystem.Data;
-using VeteranAnalyticsSystem.Models;
+using VeteranAnalyticsSystem.Models.Core;
 using VeteranAnalyticsSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,7 +46,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Register");
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/AccessDenied");
     options.Conventions.AllowAnonymousToAreaFolder("Identity", "/Account");
-});
+}).AddRazorRuntimeCompilation();
 
 // Configure redirect paths for login/access denied (optional but recommended)
 builder.Services.ConfigureApplicationCookie(options =>
@@ -57,6 +58,9 @@ builder.Services.ConfigureApplicationCookie(options =>
 // Register email sender service and options
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.Configure<AuthMessageSenderOptions>(builder.Configuration);
+
+builder.Services.AddScoped<IGoogleFormCredentialService, GoogleFormCredentialService>();
+builder.Services.AddScoped<IGoogleFormsImporterService, GoogleFormsImporterService>();
 
 // Build the app
 var app = builder.Build();

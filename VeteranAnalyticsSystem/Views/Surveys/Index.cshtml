@@ -1,4 +1,5 @@
-﻿@model List<VeteranAnalyticsSystem.Models.Survey>
+﻿@using VeteranAnalyticsSystem.Models.Core
+@model List<Survey>
 
 <h1>Survey Database</h1>
 
@@ -22,26 +23,12 @@ else
             @foreach (var survey in Model)
             {
                 <tr>
-                    <td>@survey.SubmissionDate.ToShortDateString()</td>
+                    <td>@survey.DisplaySubmissionDate</td>
                     <td>@survey.SurveyType</td>
+                    <td>@survey.ComfortZone</td>
+                    <td>@survey.Rating</td>
                     <td>
-                        @(
-                            survey.Responses.TryGetValue(
-                            "How likely are you to step outside of your comfort zone to try to things?",
-                            out var comfortZone
-                            ) ? comfortZone : "N/A"
-                            )
-                    </td>
-                    <td>
-                        @(
-                            survey.Responses.TryGetValue(
-                            "Please rate your motivation to seek private, government, or nonprofit support for your mental wellness and personal growth opportunities such as counseling, therapy, or programs like MSR and Warrior PATHH.",
-                            out var motivation
-                            ) ? motivation : "N/A"
-                            )
-                    </td>
-                    <td>
-                        <a asp-action="Details" asp-controller="Surveys" asp-route-id="@survey.SurveyId" class="btn btn-sm btn-outline-primary" target="_blank">
+                        <a asp-action="Details" asp-controller="Surveys" asp-route-id="@survey.Id" class="btn btn-sm btn-outline-primary" target="_blank">
                             View Details
                         </a>
                     </td>

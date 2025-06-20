@@ -1,114 +1,169 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
+﻿using VeteranAnalyticsSystem.Data;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
+using Google.Apis.Sheets.v4.Data;
+using Google.Apis.Sheets.v4;
+using VeteranAnalyticsSystem.Extensions;
+using VeteranAnalyticsSystem.Contracts;
 using System.Text.Json;
-using System.Threading.Tasks;
-using VeteranAnalyticsSystem.Data;
-using VeteranAnalyticsSystem.Models;
 using Microsoft.EntityFrameworkCore;
+using VeteranAnalyticsSystem.Models.Core;
+using VeteranAnalyticsSystem.Models.Enums;
 
-namespace VeteranAnalyticsSystem.Services
+namespace VeteranAnalyticsSystem.Services;
+
+public class GoogleFormsImporterService(
+    GratitudeAmericaDbContext context,
+    IConfiguration configuration,
+    IGoogleFormCredentialService googleFormCredentialService) : IGoogleFormsImporterService
 {
-    public class GoogleFormsImporterService
+    private readonly string PreFormId = configuration.GetRequiredValue<string>("PreFormId");
+    private readonly string PostFormId = configuration.GetRequiredValue<string>("PostFormId");
+
+    public async Task<int> ImportForms()
     {
-        private readonly GratitudeAmericaDbContext _context;
-        private readonly HttpClient _httpClient;
+        var lastImportDateUtc = await context.SyncRecords
+            .Where(s => s.SyncType == SyncTypes.GoogleForms)
+            .OrderByDescending(s => s.TimeStamp)
+            .Select(s => s.TimeStamp)
+            .FirstOrDefaultAsync();
 
-        private const string PreFormId = "YOUR_PRE_FORM_ID";
-        private const string PostFormId = "YOUR_POST_FORM_ID";
+        var preSurveysCount = await ImportForm(SurveyType.PreRetreat, lastImportDateUtc);
+        var postSurveysCount = await ImportForm(SurveyType.PostRetreat, lastImportDateUtc);
 
-        public GoogleFormsImporterService(GratitudeAmericaDbContext context, HttpClient httpClient)
+        context.SyncRecords.Add(new SyncRecord
         {
-            _context = context;
-            _httpClient = httpClient;
-        }
+            TimeStamp = DateTime.UtcNow,
+            SyncType = SyncTypes.GoogleForms
+        });
+        await context.SaveChangesAsync();
 
-        public async Task<List<Survey>> ImportSurveysFromGoogleFormsAsync()
+        return preSurveysCount + postSurveysCount;
+    }
+
+    private async Task<int> ImportForm(SurveyType surveyType, DateTime? lastImportDateUtc)
+    {
+        try
         {
-            var preSurveys = await ImportFromFormAsync(PreFormId, SurveyType.PreRetreat);
-            var postSurveys = await ImportFromFormAsync(PostFormId, SurveyType.PostRetreat);
-            return preSurveys.Concat(postSurveys).ToList();
-        }
+            var credentials = await googleFormCredentialService.DownloadCredentials();
 
-        private async Task<List<Survey>> ImportFromFormAsync(string formId, SurveyType surveyType)
-        {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer");
+            string[] scopes = { SheetsService.Scope.SpreadsheetsReadonly };
+            string range = surveyType == SurveyType.PreRetreat ? "Form Responses 1!A1:N" : "Form Responses 1!A1:R";
 
-            var response = await _httpClient.GetAsync($"https://forms.googleapis.com/v1/forms/{formId}/responses");
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"Failed to fetch responses from form {formId}. Status: {response.StatusCode}");
+            using var stream = new MemoryStream(credentials);
+            var credential = GoogleCredential.FromStream(stream).CreateScoped(scopes);
 
-            var json = await response.Content.ReadAsStringAsync();
-            var parsed = JsonDocument.Parse(json);
+            var service = new SheetsService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "Veteran Analytics System"
+            });
+
+            var formId = surveyType == SurveyType.PreRetreat ? PreFormId : PostFormId;
+
+            SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get(formId, range);
+
+            ValueRange response = await request.ExecuteAsync();
+            var values = response.Values;
 
             var surveys = new List<Survey>();
 
-            if (!parsed.RootElement.TryGetProperty("responses", out var responseArray))
-                return surveys;
-
-            foreach (var item in responseArray.EnumerateArray())
+            if (values != null && values.Count > 1)
             {
-                var dto = new GoogleFormsSurveyDto
+                foreach (var row in values.Skip(1))
                 {
-                    ResponseId = item.GetProperty("responseId").GetString(),
-                    CreateTime = item.GetProperty("createTime").GetDateTime(),
-                    RespondentEmail = item.GetProperty("respondentEmail").GetString()
-                };
+                    var timeStamp = row[0].ToString();
+                    DateTime? submissionDate = !string.IsNullOrWhiteSpace(timeStamp) ? DateTime.Parse(timeStamp) : null;
 
-                if (item.TryGetProperty("answers", out var answers))
-                {
-                    foreach (var ans in answers.EnumerateObject())
+                    if (lastImportDateUtc.HasValue 
+                        && submissionDate.HasValue 
+                        && submissionDate.Value < lastImportDateUtc.Value.ToEasternTime())
                     {
-                        var questionId = ans.Name;
-                        var label = QuestionMap.GetValueOrDefault(questionId, questionId);
-                        var value = ans.Value.GetProperty("textAnswers").GetProperty("answers")[0].GetProperty("value").GetString();
-                        dto.Answers[label] = value;
+                        // Skip surveys submitted before the last import date
+                        continue;
+                    }
+
+                    switch (surveyType)
+                    {
+                        case SurveyType.PreRetreat:
+                            surveys.Add(HandlePreRetreat(row));
+                            break;
+                        case SurveyType.PostRetreat:
+                            surveys.Add(HandlePostRetreat(row));
+                            break;
                     }
                 }
-
-                if (string.IsNullOrWhiteSpace(dto.RespondentEmail))
-                    continue;
-
-                var survey = new Survey
-                {
-                    Email = dto.RespondentEmail,
-                    SubmissionDate = dto.CreateTime,
-                    SurveyType = surveyType,
-                    Responses = dto.Answers
-                };
-
-                _context.Surveys.Add(survey);
-                surveys.Add(survey);
             }
 
-            await _context.SaveChangesAsync();
-            return surveys;
+            var events = await context.Events.ToListAsync();
+
+            foreach (var survey in surveys)
+            {
+                var closestEvent = events.Where(e => e.EventDate <= survey.SubmissionDate).OrderByDescending(e => e.EventDate).FirstOrDefault();
+                if (closestEvent != null)
+                {
+                    survey.EventId = closestEvent.EventId;
+                }
+            }
+
+            context.Surveys.AddRange(surveys);
+            await context.SaveChangesAsync();
+
+            return surveys.Count;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during temporary operation: {ex.Message}");
         }
 
-        // Inline DTO
-        private class GoogleFormsSurveyDto
-        {
-            public string ResponseId { get; set; }
-            public DateTime CreateTime { get; set; }
-            public string RespondentEmail { get; set; }
-            public Dictionary<string, string> Answers { get; set; } = new();
-        }
+        return 0;
+    }
 
-        // ID → Label mapping
-        private static readonly Dictionary<string, string> QuestionMap = new()
+    private static Survey HandlePreRetreat(IList<object> row)
+    {
+        var timeStamp = row[0].ToString();
+        var email = row[1].ToString();
+        var identifier = row[2].ToString();
+        DateTime? submissionDate = !string.IsNullOrWhiteSpace(timeStamp) ? DateTime.Parse(timeStamp) : null;
+
+        return new Survey
         {
-            { "32cfe45b", "Conflict Resolution Quality" },
-            { "3ff850ce", "Outlook Post MSR" },
-            { "6fd79ba8", "Wants to Continue Growth" },
-            { "20a36aa6", "Overall Benefit" },
-            { "3316b3ae", "Sharing Past Struggles" },
-            { "459c56b6", "Comfort Zone Tendency" },
-            { "3400ca2f", "Rating Score" },
-            { "1374e3e8", "Retreat ID" },
-            { "21d39a42", "Connection Level" },
-            { "3302ce16", "Staff Comments" }
+            Email = email,
+            SelfIdentifier = identifier,
+            SubmissionDate = submissionDate,
+            SurveyType = SurveyType.PreRetreat,
+            EmotionalConnection = row.Count > 3 ? row[3].ToString() : null,
+            ConflictResolution = row.Count > 4 ? row[4].ToString() : null,
+            PastStruggles = row.Count > 5 ? row[5].ToString() : null,
+            ComfortZone = row.Count > 6 ? row[6].ToString() : null,
+            Rating = row.Count > 7 ? row[7].ToString() : null,
+            ResponsesJson = JsonSerializer.Serialize(row)
+        };
+    }
+
+    private static Survey HandlePostRetreat(IList<object> row)
+    {
+        var timeStamp = row[0].ToString();
+        var email = row[1].ToString();
+        var identifier = row[2].ToString();
+        DateTime? submissionDate = !string.IsNullOrWhiteSpace(timeStamp) ? DateTime.Parse(timeStamp) : null;
+
+        return new Survey
+        {
+            Email = email,
+            SelfIdentifier = identifier,
+            SubmissionDate = submissionDate,
+            SurveyType = SurveyType.PostRetreat,
+            EmotionalConnection = row.Count > 3 ? row[3].ToString() : null,
+            ConflictResolution = row.Count > 4 ? row[4].ToString() : null,
+            PastStruggles = row.Count > 5 ? row[5].ToString() : null,
+            ComfortZone = row.Count > 6 ? row[6].ToString() : null,
+            Rating = row.Count > 7 ? row[7].ToString() : null,
+            ExperienceRating = row.Count > 8 ? row[8].ToString() : null,
+            LifeImpact = row.Count > 9 ? row[9].ToString() : null,
+            Recommendation = row.Count > 10 ? row[10].ToString() : null,
+            Feedback = row.Count > 11 ? row[11].ToString() : null,
+            ResponsesJson = JsonSerializer.Serialize(row)
         };
     }
 }

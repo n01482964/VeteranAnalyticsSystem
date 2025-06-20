@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
-using VeteranAnalyticsSystem.Models;
+using VeteranAnalyticsSystem.Models.Core;
 
 namespace VeteranAnalyticsSystem.Areas.Identity.Pages.Account
 {

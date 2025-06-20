@@ -27,7 +27,7 @@ namespace VeteranAnalyticsSystem.Controllers
         public async Task<IActionResult> Details(int id)
         {
             // Retrieve a single survey based on its SurveyId.
-            var survey = await _context.Surveys.FirstOrDefaultAsync(s => s.SurveyId == id);
+            var survey = await _context.Surveys.FirstOrDefaultAsync(s => s.Id == id);
             if (survey == null)
             {
                 return NotFound();

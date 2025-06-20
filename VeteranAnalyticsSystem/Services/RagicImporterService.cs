@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using VeteranAnalyticsSystem.Data;
-using VeteranAnalyticsSystem.Models;
+using VeteranAnalyticsSystem.Models.Core;
 
 namespace VeteranAnalyticsSystem.Services
 {

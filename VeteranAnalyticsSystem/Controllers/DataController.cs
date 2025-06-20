@@ -1,272 +1,159 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Mvc;
 using VeteranAnalyticsSystem.Data;
 using VeteranAnalyticsSystem.Services;
-using VeteranAnalyticsSystem.Models;
 using Microsoft.EntityFrameworkCore;
+using VeteranAnalyticsSystem.Contracts;
+using VeteranAnalyticsSystem.Models.ViewModels;
+using VeteranAnalyticsSystem.Models.Enums;
 
-namespace VeteranAnalyticsSystem.Controllers
+namespace VeteranAnalyticsSystem.Controllers;
+
+public class DataController(
+    GratitudeAmericaDbContext context,
+    RagicImporterService ragicImporterService,
+    IGoogleFormsImporterService googleFormsImporterService) : Controller
 {
-    public class DataController : Controller
+    [HttpGet]
+    public async Task<IActionResult> Index()
     {
-        private readonly RagicImporterService _ragicImporterService;
-        private readonly GoogleFormsImporterService _googleFormsImporterService;
-        private readonly GratitudeAmericaDbContext _context;
-        private readonly FileImporterService _fileImporterService;
-        private readonly IConfiguration _configuration;
+        return View(await GetIndexViewModel());
+    }
 
-        public DataController(GratitudeAmericaDbContext context, IConfiguration configuration,
-        RagicImporterService ragicImporterService)
+    [HttpPost]
+    public async Task<IActionResult> DeleteAllSurveys()
+    {
+        context.SyncRecords.RemoveRange(context.SyncRecords);
+        context.Surveys.RemoveRange(context.Surveys);
+        await context.SaveChangesAsync();
+
+        var viewModel = await GetIndexViewModel();
+        viewModel.Message = "All surveys deleted successfully.";
+
+        return View("Index", viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteAllVeterans()
+    {
+        try
         {
-            _context = context;
-            _fileImporterService = new FileImporterService(context);
-            _ragicImporterService = ragicImporterService;
-            //_googleFormsImporterService = googleFormsImporterService;
+            var veterans = await context.Veterans.ToListAsync();
+            context.Veterans.RemoveRange(veterans);
+            await context.SaveChangesAsync();
 
-            _configuration = configuration;
+            return Json(new { success = true, message = "All veterans deleted successfully." });
         }
-
-        [HttpGet]
-        public IActionResult Index() // ✅ Changed from DataImport()
+        catch (Exception ex)
         {
-            ViewBag.TotalVeterans = _context.Veterans.Count();
-            ViewBag.TotalEvents = _context.Events.Count();
-            return View(); // ✅ Will now look for Views/Data/Index.cshtml
+            return Json(new { success = false, message = $"Error deleting veterans: {ex.Message}" });
         }
+    }
 
-        //[HttpPost]
-        //public async Task<IActionResult> Import(string fileType)
-        //{
-        //    var service = new RagicImporterService(_configuration);
-        //    await service.ImportVeteransBatchAsync();
-        //    if (uploadfile == null || uploadfile.length == 0)
-        //    {
-        //        return json(new { success = false, message = "please select a file to upload." });
-        //    }
-
-        //    var uploadsfolder = path.combine(directory.getcurrentdirectory(), "wwwroot", "uploads");
-        //    directory.createdirectory(uploadsfolder);
-
-        //    var filepath = path.combine(uploadsfolder, path.getfilename(uploadfile.filename));
-        //    using (var stream = new filestream(filepath, filemode.create))
-        //    {
-        //        await uploadfile.copytoasync(stream);
-        //    }
-
-        //    try
-        //    {
-        //        if (fileType == "VeteranData")
-        //        {
-        //            var veterans = _fileImporterService.ImportVeteransFromExcel("filePath");
-
-        //            foreach (var vet in veterans)
-        //            {
-        //                SanitizeVeteranFields(vet);
-
-        //                var existingVet = _context.Veterans.FirstOrDefault(v =>
-        //                    v.Email.ToLower() == vet.Email.ToLower() &&
-        //                    v.FirstName.ToLower() == vet.FirstName.ToLower() &&
-        //                    v.LastName.ToLower() == vet.LastName.ToLower());
-
-        //                if (existingVet != null) continue;
-
-        //                _context.Veterans.Add(vet);
-        //            }
-
-        //            await _context.SaveChangesAsync();
-        //        }
-        //        else if (fileType == "PreRetreatSurvey" || fileType == "PostRetreatSurvey")
-        //        {
-        //            var surveyType = fileType == "PreRetreatSurvey" ? SurveyType.PreRetreat : SurveyType.PostRetreat;
-        //            var surveys = _fileImporterService.ImportSurveys("filePath", surveyType);
-
-        //            foreach (var survey in surveys)
-        //            {
-        //                _context.Surveys.Add(survey);
-        //            }
-
-        //            await _context.SaveChangesAsync();
-        //        }
-        //        else
-        //        {
-        //            return Json(new { success = false, message = "Unsupported file type." });
-        //        }
-
-        //        System.IO.File.Delete("filePath");
-        //        return Json(new { success = true, message = "Import successful!" });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return Json(new { success = false, message = $"Error importing data: {ex.Message}" });
-        //    }
-        //}
-
-        [HttpPost]
-        public async Task<IActionResult> DeleteAllSurveys()
+    [HttpPost]
+    public async Task<IActionResult> DeleteAllEvents()
+    {
+        try
         {
-            try
-            {
-                var surveys = await _context.Surveys.ToListAsync();
-                _context.Surveys.RemoveRange(surveys);
-                await _context.SaveChangesAsync();
+            var events = await context.Events.ToListAsync();
+            context.Events.RemoveRange(events);
+            await context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "All surveys deleted successfully." });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Error deleting surveys: {ex.Message}" });
-            }
+            return Json(new { success = true, message = "All events deleted successfully." });
         }
-
-        [HttpPost]
-        public async Task<IActionResult> DeleteAllVeterans()
+        catch (Exception ex)
         {
-            try
-            {
-                var veterans = await _context.Veterans.ToListAsync();
-                _context.Veterans.RemoveRange(veterans);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "All veterans deleted successfully." });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Error deleting veterans: {ex.Message}" });
-            }
+            return Json(new { success = false, message = $"Error deleting events: {ex.Message}" });
         }
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> DeleteAllEvents()
+    [HttpPost]
+    public async Task<IActionResult> SyncRagicDatabase()
+    {
+        try
         {
-            try
-            {
-                var events = await _context.Events.ToListAsync();
-                _context.Events.RemoveRange(events);
-                await _context.SaveChangesAsync();
+            var importedVeterans = await ragicImporterService.SyncVeteransFromRagicAsync();
 
-                return Json(new { success = true, message = "All events deleted successfully." });
-            }
-            catch (Exception ex)
+            TempData["LastRagicSyncTime"] = DateTime.Now;
+            return Json(new
             {
-                return Json(new { success = false, message = $"Error deleting events: {ex.Message}" });
-            }
+                success = true,
+                message = $"Ragic sync complete. {importedVeterans.Count} new veterans imported.",
+                lastSync = TempData["LastRagicSyncTime"]
+            });
         }
-
-        private void SanitizeVeteranFields(Veteran vet)
+        catch (Exception ex)
         {
-            vet.FirstName = string.IsNullOrWhiteSpace(vet.FirstName) ? "N/A" : vet.FirstName;
-            vet.LastName = string.IsNullOrWhiteSpace(vet.LastName) ? "N/A" : vet.LastName;
-            vet.Email = string.IsNullOrWhiteSpace(vet.Email) ? $"unknown-{Guid.NewGuid()}@example.com" : vet.Email;
-            vet.PhoneNumber = string.IsNullOrWhiteSpace(vet.PhoneNumber) ? "N/A" : vet.PhoneNumber;
-            vet.HomeAddress = string.IsNullOrWhiteSpace(vet.HomeAddress) ? "Unknown" : vet.HomeAddress;
-            vet.City = string.IsNullOrWhiteSpace(vet.City) ? "Unknown" : vet.City;
-            vet.State = string.IsNullOrWhiteSpace(vet.State) ? "Unknown" : vet.State;
-            vet.RelationshipStatus = string.IsNullOrWhiteSpace(vet.RelationshipStatus) ? "Unknown" : vet.RelationshipStatus;
-            vet.Gender = string.IsNullOrWhiteSpace(vet.Gender) ? "Unknown" : vet.Gender;
-            vet.MilitaryServiceStatus = string.IsNullOrWhiteSpace(vet.MilitaryServiceStatus) ? "Unknown" : vet.MilitaryServiceStatus;
-            vet.HighestRank = string.IsNullOrWhiteSpace(vet.HighestRank) ? "Unknown" : vet.HighestRank;
-            vet.BranchOfService = string.IsNullOrWhiteSpace(vet.BranchOfService) ? "Unknown" : vet.BranchOfService;
-            vet.DeploymentDetails = string.IsNullOrWhiteSpace(vet.DeploymentDetails) ? "None" : vet.DeploymentDetails;
-            vet.HealthConcerns = string.IsNullOrWhiteSpace(vet.HealthConcerns) ? "None" : vet.HealthConcerns;
-            vet.AdditionalHealthInfo = string.IsNullOrWhiteSpace(vet.AdditionalHealthInfo) ? "None" : vet.AdditionalHealthInfo;
-            vet.PhysicalLimitations = string.IsNullOrWhiteSpace(vet.PhysicalLimitations) ? "None" : vet.PhysicalLimitations;
+            return Json(new
+            {
+                success = false,
+                message = $"Ragic sync failed: {ex.Message}"
+            });
         }
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> SyncRagicDatabase()
+    [HttpPost]
+    public async Task<IActionResult> ImportFromGoogleForms()
+    {
+        var count = await googleFormsImporterService.ImportForms();
+
+        var viewModel = await GetIndexViewModel();
+        viewModel.Message = count == 0 ? "No new items synced" : $"{count} new items synced";
+
+        return View("Index", viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ClearAzureDatabase()
+    {
+        try
         {
-            try
-            {
-                var importedVeterans = await _ragicImporterService.SyncVeteransFromRagicAsync();
+            var veterans = await context.Veterans.ToListAsync();
+            var events = await context.Events.ToListAsync();
+            var surveys = await context.Surveys.ToListAsync();
 
-                TempData["LastRagicSyncTime"] = DateTime.Now;
-                return Json(new
-                {
-                    success = true,
-                    message = $"Ragic sync complete. {importedVeterans.Count} new veterans imported.",
-                    lastSync = TempData["LastRagicSyncTime"]
-                });
-            }
-            catch (Exception ex)
+            context.Veterans.RemoveRange(veterans);
+            context.Events.RemoveRange(events);
+            context.Surveys.RemoveRange(surveys);
+
+            await context.SaveChangesAsync();
+
+            var timestamp = DateTime.Now.ToString("f");
+            return Json(new
             {
-                return Json(new
-                {
-                    success = false,
-                    message = $"Ragic sync failed: {ex.Message}"
-                });
-            }
+                success = true,
+                message = "Azure database cleared successfully.",
+                lastCleared = timestamp
+            });
         }
-
-
-
-        [HttpPost]
-        public async Task<IActionResult> ImportFromGoogleForms()
+        catch (Exception ex)
         {
-            try
+            return Json(new
             {
-                var imported = await _googleFormsImporterService.ImportSurveysFromGoogleFormsAsync();
-
-                return Json(new
-                {
-                    message = $"{imported.Count} surveys imported from Google Forms.",
-                    lastSync = DateTime.UtcNow.ToString("g")
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new
-                {
-                    message = $"Google Forms import failed: {ex.Message}",
-                    lastSync = "N/A"
-                });
-            }
+                success = false,
+                message = $"Error clearing Azure database: {ex.Message}"
+            });
         }
+    }
 
-        //[HttpGet]
-        //public IActionResult GetLastSyncTimes()
-        //{
-        //    var ragicSync = TempData["LastRagicSyncTime"] ?? "Never";
-        //    var googleSync = TempData["LastGoogleSyncTime"] ?? "Never";
+    private async Task<DataViewModel> GetIndexViewModel()
+    {
+        var lastGoogleFormsSync = await context.SyncRecords
+                .Where(s => s.SyncType == SyncTypes.GoogleForms)
+                .OrderByDescending(s => s.TimeStamp)
+                .Select(s => s.TimeStamp)
+                .FirstOrDefaultAsync();
+        var lastRagicSync = await context.SyncRecords
+                .Where(s => s.SyncType == SyncTypes.Ragic)
+                .OrderByDescending(s => s.TimeStamp)
+                .Select(s => s.TimeStamp)
+                .FirstOrDefaultAsync();
 
-        //    return Json(new { ragic = ragicSync, google = googleSync });
-        //}
-
-        [HttpPost]
-        public async Task<IActionResult> ClearAzureDatabase()
+        return new DataViewModel
         {
-            try
-            {
-                var veterans = await _context.Veterans.ToListAsync();
-                var events = await _context.Events.ToListAsync();
-                var surveys = await _context.Surveys.ToListAsync();
-
-                _context.Veterans.RemoveRange(veterans);
-                _context.Events.RemoveRange(events);
-                _context.Surveys.RemoveRange(surveys);
-
-                await _context.SaveChangesAsync();
-
-                var timestamp = DateTime.Now.ToString("f");
-                return Json(new
-                {
-                    success = true,
-                    message = "Azure database cleared successfully.",
-                    lastCleared = timestamp
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new
-                {
-                    success = false,
-                    message = $"Error clearing Azure database: {ex.Message}"
-                });
-            }
-        }
-
+            LastGoogleFormsSync = lastGoogleFormsSync != default ? lastGoogleFormsSync : null,
+            LastRagicSync = lastRagicSync != default ? lastGoogleFormsSync : null,
+            TotalVeterans = context.Veterans.Count(),
+            TotalEvents = context.Events.Count()
+        };
     }
 }
