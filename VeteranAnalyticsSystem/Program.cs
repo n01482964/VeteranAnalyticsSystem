@@ -62,6 +62,8 @@ builder.Services.Configure<AuthMessageSenderOptions>(builder.Configuration);
 builder.Services.AddScoped<IGoogleFormCredentialService, GoogleFormCredentialService>();
 builder.Services.AddScoped<IGoogleFormsImporterService, GoogleFormsImporterService>();
 
+builder.Services.AddApplicationInsightsTelemetry();
+
 // Build the app
 var app = builder.Build();
 
