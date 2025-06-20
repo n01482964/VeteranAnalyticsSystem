@@ -10,5 +10,9 @@ public class DataViewModel
 
     public DateTime? LastGoogleFormsSync { get; set; }
 
+    public bool Error { get; set; }
+
+    public string? Message { get; set; }
+
     public string DisplayLastGoogleFormsSync => LastGoogleFormsSync.HasValue ? LastGoogleFormsSync.Value.ToShortDateString() : "Never";
 }

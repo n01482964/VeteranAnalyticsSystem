@@ -14,45 +14,22 @@ public class DataController(
     IGoogleFormsImporterService googleFormsImporterService) : Controller
 {
     [HttpGet]
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        var lastGoogleFormsSync = context.SyncRecords
-                .Where(s => s.SyncType == SyncTypes.GoogleForms)
-                .OrderByDescending(s => s.TimeStamp)
-                .Select(s => s.TimeStamp)
-                .FirstOrDefault();
-        var lastRagicSync = context.SyncRecords
-                .Where(s => s.SyncType == SyncTypes.Ragic)
-                .OrderByDescending(s => s.TimeStamp)
-                .Select(s => s.TimeStamp)
-                .FirstOrDefault();
-
-        var model = new DataViewModel
-        {
-            LastGoogleFormsSync = lastGoogleFormsSync != default ? lastGoogleFormsSync : null,
-            LastRagicSync = lastRagicSync != default ? lastGoogleFormsSync : null,
-            TotalVeterans = context.Veterans.Count(),
-            TotalEvents = context.Events.Count()
-        };
-
-        return View(model);
+        return View(await GetIndexViewModel());
     }
 
     [HttpPost]
     public async Task<IActionResult> DeleteAllSurveys()
     {
-        try
-        {
-            var surveys = await context.Surveys.ToListAsync();
-            context.Surveys.RemoveRange(surveys);
-            await context.SaveChangesAsync();
+        context.SyncRecords.RemoveRange(context.SyncRecords);
+        context.Surveys.RemoveRange(context.Surveys);
+        await context.SaveChangesAsync();
 
-            return Json(new { success = true, message = "All surveys deleted successfully." });
-        }
-        catch (Exception ex)
-        {
-            return Json(new { success = false, message = $"Error deleting surveys: {ex.Message}" });
-        }
+        var viewModel = await GetIndexViewModel();
+        viewModel.Message = "All surveys deleted successfully.";
+
+        return View("Index", viewModel);
     }
 
     [HttpPost]
@@ -117,8 +94,12 @@ public class DataController(
     [HttpPost]
     public async Task<IActionResult> ImportFromGoogleForms()
     {
-        await googleFormsImporterService.ImportForms();
-        return RedirectToAction("Index");
+        var count = await googleFormsImporterService.ImportForms();
+
+        var viewModel = await GetIndexViewModel();
+        viewModel.Message = count == 0 ? "No new items synced" : $"{count} new items synced";
+
+        return View("Index", viewModel);
     }
 
     [HttpPost]
@@ -152,5 +133,27 @@ public class DataController(
                 message = $"Error clearing Azure database: {ex.Message}"
             });
         }
+    }
+
+    private async Task<DataViewModel> GetIndexViewModel()
+    {
+        var lastGoogleFormsSync = await context.SyncRecords
+                .Where(s => s.SyncType == SyncTypes.GoogleForms)
+                .OrderByDescending(s => s.TimeStamp)
+                .Select(s => s.TimeStamp)
+                .FirstOrDefaultAsync();
+        var lastRagicSync = await context.SyncRecords
+                .Where(s => s.SyncType == SyncTypes.Ragic)
+                .OrderByDescending(s => s.TimeStamp)
+                .Select(s => s.TimeStamp)
+                .FirstOrDefaultAsync();
+
+        return new DataViewModel
+        {
+            LastGoogleFormsSync = lastGoogleFormsSync != default ? lastGoogleFormsSync : null,
+            LastRagicSync = lastRagicSync != default ? lastGoogleFormsSync : null,
+            TotalVeterans = context.Veterans.Count(),
+            TotalEvents = context.Events.Count()
+        };
     }
 }

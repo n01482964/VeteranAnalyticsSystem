@@ -8,6 +8,7 @@ using VeteranAnalyticsSystem.Contracts;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using VeteranAnalyticsSystem.Models.Core;
+using VeteranAnalyticsSystem.Models.Enums;
 
 namespace VeteranAnalyticsSystem.Services;
 
@@ -21,20 +22,26 @@ public class GoogleFormsImporterService(
 
     public async Task<int> ImportForms()
     {
-        var preSurveysCount = await ImportForm(SurveyType.PreRetreat);
-        var postSurveysCount = await ImportForm(SurveyType.PostRetreat);
+        var lastImportDateUtc = await context.SyncRecords
+            .Where(s => s.SyncType == SyncTypes.GoogleForms)
+            .OrderByDescending(s => s.TimeStamp)
+            .Select(s => s.TimeStamp)
+            .FirstOrDefaultAsync();
+
+        var preSurveysCount = await ImportForm(SurveyType.PreRetreat, lastImportDateUtc);
+        var postSurveysCount = await ImportForm(SurveyType.PostRetreat, lastImportDateUtc);
 
         context.SyncRecords.Add(new SyncRecord
         {
             TimeStamp = DateTime.UtcNow,
-            SyncType = Models.Enums.SyncTypes.GoogleForms
+            SyncType = SyncTypes.GoogleForms
         });
         await context.SaveChangesAsync();
 
         return preSurveysCount + postSurveysCount;
     }
 
-    private async Task<int> ImportForm(SurveyType surveyType)
+    private async Task<int> ImportForm(SurveyType surveyType, DateTime? lastImportDateUtc)
     {
         try
         {
@@ -65,7 +72,16 @@ public class GoogleFormsImporterService(
             {
                 foreach (var row in values.Skip(1))
                 {
-                    Console.WriteLine(string.Join(",", row));
+                    var timeStamp = row[0].ToString();
+                    DateTime? submissionDate = !string.IsNullOrWhiteSpace(timeStamp) ? DateTime.Parse(timeStamp) : null;
+
+                    if (lastImportDateUtc.HasValue 
+                        && submissionDate.HasValue 
+                        && submissionDate.Value < lastImportDateUtc.Value.ToEasternTime())
+                    {
+                        // Skip surveys submitted before the last import date
+                        continue;
+                    }
 
                     switch (surveyType)
                     {
