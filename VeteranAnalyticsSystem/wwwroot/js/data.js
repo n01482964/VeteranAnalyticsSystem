@@ -8,6 +8,7 @@
         googleForm.addEventListener('submit', (e) => {
             e.preventDefault();
             googleButton.innerHTML = loadingState;
+            googleButton.disabled = true;
 
             e.currentTarget.submit();
         });
@@ -20,6 +21,7 @@
         deleteSurveysForm.addEventListener('submit', (e) => {
             e.preventDefault();
             deleteSurveysButton.innerHTML = loadingState;
+            deleteSurveysButton.disabled = true;
 
             e.currentTarget.submit();
         });
