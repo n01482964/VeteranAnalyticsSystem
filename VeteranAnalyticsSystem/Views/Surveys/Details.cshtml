@@ -3,20 +3,10 @@
 
 @{
     ViewData["Title"] = "Survey Details";
-
-    var questionLookup = new Dictionary<string, string>
-            {
-                ["Q2"] = "Unique 4-Digit Code",
-                ["Q3"] = "Level of Emotional Connection with Your Support Person/Veteran",
-                ["Q4"] = "Ability to Resolve Conflict with Your Support Person/Veteran",
-                ["Q5"] = "Likelihood to Share Past Struggles with Your Support Person/Veteran",
-                ["Q6"] = "Likelihood to Step Outside Your Comfort Zone",
-                ["Q7"] = "Motivation to Seek Support for Mental Wellness"
-            };
 }
 
 <div class="container mt-4">
-    <h1 class="mb-4">Survey Details (ID: @Model.Id)</h1>
+    <h2 class="mb-4">Survey Details (ID: @Model.Id)</h2>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -31,33 +21,40 @@
         </div>
     </div>
 
-    <h3>Survey Responses</h3>
-    @* @if (Model.Responses != null && Model.Responses.Any())
-    {
-        <table class="table table-striped table-bordered">
-            <thead class="thead-dark">
-                <tr>
-                    <th>Question</th>
-                    <th>Response</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var kvp in Model.Responses)
-                {
-                    var key = kvp.Key;
-                    var questionText = questionLookup.ContainsKey(key) ? questionLookup[key] : key;
-                    var answer = kvp.Value;
+    <div class="card">
+        <div class="card-header">
+            Survey Responses
+        </div>
+        <div class="card-body">
+            <div>
+                <strong>Please identify yourself with a unique 4-digit code you will easily remember:  </strong>
+                <p>@Model.SelfIdentifier</p>
+            </div>
 
-                    <tr>
-                        <td><strong>@questionText</strong></td>
-                        <td>@answer</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-    else
-    {
-        <p>No responses available for this survey.</p>
-    } *@
+            <div>
+                <strong>How would you rate your level of emotional connection with your support person/veteran?</strong>
+                <p>@Model.EmotionalConnection</p>
+            </div>
+
+            <div>
+                <strong>How would you rate your ability to resolve conflict with your support person/veteran?</strong>
+                <p>@Model.ConflictResolution</p>
+            </div>
+
+            <div>
+                <strong>How likely are you to share your past struggles with your support person/veteran?</strong>
+                <p>@Model.PastStruggles</p>
+            </div>
+
+            <div>
+                <strong>How likely are you to step outside of your comfort zone to try to things?</strong>
+                <p>@Model.ComfortZone</p>
+            </div>
+
+            <div>
+                <strong>Please rate your motivation to seek private, government, or nonprofit support for your mental wellness and personal growth opportunities such as counseling, therapy, or programs like MSR and Warrior PATHH.</strong>
+                <p>@Model.Rating</p>
+            </div>
+        </div>
+    </div>
 </div>

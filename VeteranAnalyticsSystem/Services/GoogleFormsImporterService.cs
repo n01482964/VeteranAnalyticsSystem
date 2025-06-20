@@ -63,7 +63,7 @@ public class GoogleFormsImporterService(
 
             if (values != null && values.Count > 1)
             {
-                foreach (var row in values)
+                foreach (var row in values.Skip(1))
                 {
                     Console.WriteLine(string.Join(",", row));
 
@@ -137,7 +137,7 @@ public class GoogleFormsImporterService(
             Email = email,
             SelfIdentifier = identifier,
             SubmissionDate = submissionDate,
-            SurveyType = SurveyType.PreRetreat,
+            SurveyType = SurveyType.PostRetreat,
             EmotionalConnection = row.Count > 3 ? row[3].ToString() : null,
             ConflictResolution = row.Count > 4 ? row[4].ToString() : null,
             PastStruggles = row.Count > 5 ? row[5].ToString() : null,
